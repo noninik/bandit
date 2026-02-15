@@ -9,6 +9,7 @@
 </head>
 <body>
     <div class="app">
+        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-section">
                 <div class="sidebar-title"><span class="folder-icon">▼</span> AGENTS</div>
@@ -27,12 +28,16 @@
             </div>
 
             <div class="sidebar-section">
-                <div class="sidebar-title"><span class="folder-icon">▼</span> 🚀 FULL CYCLE</div>
+                <div class="sidebar-title"><span class="folder-icon">▼</span> 🚀 GENERATE</div>
                 <div class="fullcycle-panel">
                     <input type="text" id="nicheInput" placeholder="Введи нишу..." class="niche-input">
                     <button class="fullcycle-btn" onclick="runFullCycle()">
-                        🚀 Запустить полный цикл
-                        <span class="fullcycle-desc">Скан соцсетей → Идеи → Бизнес-план</span>
+                        🚀 Полный цикл
+                        <span class="fullcycle-desc">Скан → Идеи → План → Карточка</span>
+                    </button>
+                    <button class="generate-btn" onclick="quickGenerate()">
+                        ⚡ Быстрая генерация
+                        <span class="fullcycle-desc">Только бизнес-идеи</span>
                     </button>
                 </div>
             </div>
@@ -40,18 +45,10 @@
             <div class="sidebar-section">
                 <div class="sidebar-title"><span class="folder-icon">▼</span> CHAINS</div>
                 <div class="chain-buttons">
-                    <button class="chain-btn" onclick="runChain(['scanner','idea_generator','business_plan'], 'Полный анализ')">
-                        🔥 Скан → Идеи → План
-                    </button>
-                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Стратегия')">
-                        📊 Анализ → Стратегия → Маркетинг
-                    </button>
-                    <button class="chain-btn" onclick="runChain(['strategist','developer'], 'Техническая')">
-                        🛠 Стратегия → Разработка
-                    </button>
-                    <button class="chain-btn" onclick="runChain(['marketer','sales'], 'Продажи')">
-                        💰 Маркетинг → Продажи
-                    </button>
+                    <button class="chain-btn" onclick="runChain(['scanner','idea_generator','business_plan'], 'Полный')">🔥 Скан → Идеи → План</button>
+                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Стратегия')">📊 Анализ → Стратегия → Маркетинг</button>
+                    <button class="chain-btn" onclick="runChain(['strategist','developer'], 'Тех')">🛠 Стратегия → Разработка</button>
+                    <button class="chain-btn" onclick="runChain(['marketer','sales'], 'Продажи')">💰 Маркетинг → Продажи</button>
                 </div>
             </div>
 
@@ -65,7 +62,7 @@
                 <div class="session-info">
                     <div class="session-row"><span>📊</span><span>messages: <span id="msgCount">0</span></span></div>
                     <div class="session-row"><span>🤖</span><span>agents: <span id="agentsUsed">0</span></span></div>
-                    <div class="session-row"><span>🔗</span><span>chains: <span id="chainsRun">0</span></span></div>
+                    <div class="session-row"><span>📋</span><span>plans: <span id="plansCount">0</span></span></div>
                     <div class="session-row"><span>🕐</span><span>uptime: <span id="uptime">00:00</span></span></div>
                 </div>
             </div>
@@ -73,11 +70,11 @@
             <div class="sidebar-section">
                 <div class="sidebar-title"><span class="folder-icon">▼</span> QUESTS</div>
                 <div id="questsList">
-                    <div class="quest-item"><div class="quest-check" id="q1">☐</div><span>Просканировать соцсети</span></div>
-                    <div class="quest-item"><div class="quest-check" id="q2">☐</div><span>Запустить полный цикл</span></div>
-                    <div class="quest-item"><div class="quest-check" id="q3">☐</div><span>Получить бизнес-план</span></div>
-                    <div class="quest-item"><div class="quest-check" id="q4">☐</div><span>Использовать 3+ агентов</span></div>
-                    <div class="quest-item"><div class="quest-check" id="q5">☐</div><span>Экспортировать результат</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q1">☐</div><span>Сканировать соцсети</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q2">☐</div><span>Полный цикл</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q3">☐</div><span>Бизнес-план</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q4">☐</div><span>3+ агентов</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q5">☐</div><span>Экспорт</span></div>
                 </div>
             </div>
 
@@ -89,39 +86,65 @@
 
         <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
 
-        <main class="terminal-area">
+        <!-- Main Content — Split Screen -->
+        <main class="main-content">
             <div class="tab-bar">
-                <div class="tab active"><span class="tab-icon">⚡</span> AI AGENT ARMY</div>
+                <div class="tab-group">
+                    <div class="tab active" onclick="showPanel('both')"><span class="tab-icon">⚡</span> ALL</div>
+                    <div class="tab" onclick="showPanel('plans')"><span class="tab-icon">📋</span> PLANS</div>
+                    <div class="tab" onclick="showPanel('terminal')"><span class="tab-icon">💬</span> TERMINAL</div>
+                </div>
                 <div class="tab-status">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="statusText">Ready</span>
                 </div>
             </div>
 
-            <div class="terminal" id="terminal">
-                <div class="terminal-welcome">
-                    <pre class="ascii-art">
-    ╔══════════════════════════════════════════════════╗
-    ║        AI  AGENT  ARMY  v4.0                    ║
-    ║        Social Scanner + Auto Business Plans     ║
-    ╚══════════════════════════════════════════════════╝</pre>
-                    <div class="init-log"><span class="log-success">✓</span> System online</div>
-                    <div class="init-log"><span class="log-success">✓</span> 7 agents loaded</div>
-                    <div class="init-log"><span class="log-success">✓</span> Social scanner ready (Reddit, YouTube, Twitter)</div>
-                    <div class="init-log"><span class="log-success">✓</span> Business plan generator ready</div>
-                    <div class="init-log"><span class="log-success">✓</span> Full cycle mode available</div>
-                    <div class="init-log"><span class="log-info">ℹ</span> Enter a niche on the left and click 🚀 Full Cycle</div>
-                    <div class="init-log"><span class="log-info">ℹ</span> Or type any task — AI dispatcher will route it</div>
+            <div class="split-screen" id="splitScreen">
+                <!-- Left: Business Plans Cards -->
+                <div class="plans-panel" id="plansPanel">
+                    <div class="plans-header">
+                        <h3>📋 Бизнес-планы</h3>
+                        <span class="plans-count" id="plansCardCount">0</span>
+                    </div>
+                    <div class="plans-list" id="plansList">
+                        <div class="plans-empty" id="plansEmpty">
+                            <div class="empty-icon">📋</div>
+                            <p>Пока нет планов</p>
+                            <p class="empty-hint">Введи нишу слева и нажми 🚀 Полный цикл</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="input-bar">
-                <div class="input-prompt">
-                    <span class="prompt-agent" id="promptAgent">🧠</span>
-                    <span class="prompt-arrow">❯</span>
+                <!-- Divider -->
+                <div class="panel-divider" id="panelDivider"></div>
+
+                <!-- Right: Terminal -->
+                <div class="terminal-panel" id="terminalPanel">
+                    <div class="terminal" id="terminal">
+                        <div class="terminal-welcome">
+                            <pre class="ascii-art">
+ ╔═══════════════════════════════════════════╗
+ ║     AI  AGENT  ARMY  v5.0                ║
+ ║     Split View + Business Plans           ║
+ ╚═══════════════════════════════════════════╝</pre>
+                            <div class="init-log"><span class="log-success">✓</span> System online</div>
+                            <div class="init-log"><span class="log-success">✓</span> 8 agents loaded</div>
+                            <div class="init-log"><span class="log-success">✓</span> Dual-model mode (Llama + Gemma)</div>
+                            <div class="init-log"><span class="log-success">✓</span> Business plan cards ready</div>
+                            <div class="init-log"><span class="log-info">ℹ</span> Enter niche → 🚀 Full Cycle → Get cards</div>
+                        </div>
+                    </div>
+
+                    <div class="input-bar">
+                        <div class="input-prompt">
+                            <span class="prompt-agent" id="promptAgent">🧠</span>
+                            <span class="prompt-arrow">❯</span>
+                        </div>
+                        <textarea id="userInput" placeholder="Task or /command..." rows="1" onkeydown="handleKeyDown(event)" spellcheck="false"></textarea>
+                        <button onclick="sendMessage()" id="sendBtn">▶</button>
+                    </div>
                 </div>
-                <textarea id="userInput" placeholder="Describe task or enter /scan [niche]..." rows="1" onkeydown="handleKeyDown(event)" spellcheck="false"></textarea>
-                <button onclick="sendMessage()" id="sendBtn">▶</button>
             </div>
         </main>
     </div>
