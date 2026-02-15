@@ -11,16 +11,12 @@ app = Flask(__name__)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-MODELS = {
-    "smart": "llama-3.3-70b-versatile",
-    "fast": "llama-3.1-8b-instant",
-    "analytic": "gemma2-9b-it"
-}
+MODEL = "llama-3.3-70b-versatile"
 
 
-def ask_smart(messages):
+def ask_llm(messages):
     return client.chat.completions.create(
-        model=MODELS["smart"],
+        model=MODEL,
         messages=messages,
         temperature=0.7,
         max_tokens=4096
@@ -29,18 +25,9 @@ def ask_smart(messages):
 
 def ask_fast(messages):
     return client.chat.completions.create(
-        model=MODELS["fast"],
+        model="llama-3.1-8b-instant",
         messages=messages,
-        temperature=0.3,
-        max_tokens=1000
-    )
-
-
-def ask_analytic(messages):
-    return client.chat.completions.create(
-        model=MODELS["analytic"],
-        messages=messages,
-        temperature=0.4,
+        temperature=0.8,
         max_tokens=2000
     )
 
@@ -53,56 +40,36 @@ def clean_response(reply):
     return reply
 
 
-def enhance_response(original_reply, user_message, agent_name):
-    try:
-        check = ask_fast([
-            {"role": "system", "content": """Ты — контролёр качества. Проверь ответ AI-агента.
+AUTO_IDEAS_PROMPT = """Ты — генератор трендовых бизнес-идей. Сгенерируй ровно 7 актуальных бизнес-идей на 2025 год.
 
-Если ответ хороший — верни его БЕЗ ИЗМЕНЕНИЙ.
-Если чего-то не хватает — ДОПОЛНИ в конце блоком:
+Для КАЖДОЙ идеи ответь СТРОГО в JSON формате. Верни JSON массив.
 
-[ДОПОЛНЕНИЕ]
-- то что упущено
+Критерии идей:
+- Можно запустить одному человеку
+- Бюджет старта до $500
+- Потенциал дохода от $3000/мес
+- Основаны на реальных трендах и болях людей
+- Разнообразные ниши (не все про IT)
 
-Не переписывай ответ. Только дополни если нужно.
-Отвечай на языке оригинального ответа."""},
-            {"role": "user", "content": "Запрос: " + user_message[:200] + "\n\nАгент " + agent_name + " ответил:\n" + original_reply[:1500] + "\n\nПроверь и дополни если нужно."}
-        ])
-        addition = check.choices[0].message.content.strip()
-        if "[ДОПОЛНЕНИЕ]" in addition:
-            extra = addition.split("[ДОПОЛНЕНИЕ]")[-1].strip()
-            if extra and len(extra) > 20:
-                return original_reply + "\n\n[ДОПОЛНЕНИЕ от контролёра качества]\n" + extra
-        return original_reply
-    except Exception:
-        return original_reply
+Формат ответа — ТОЛЬКО JSON массив, без другого текста:
+[
+  {
+    "title": "Название идеи (коротко, 3-5 слов)",
+    "niche": "Ниша (1-2 слова)",
+    "problem": "Какую боль решает (1 предложение)",
+    "solution": "Что делаем (1 предложение)",
+    "format": "SaaS/Бот/Курс/Агентство/Маркетплейс/Приложение",
+    "revenue": "$X/мес потенциал",
+    "startup_cost": "$X",
+    "time_to_mvp": "X недель",
+    "difficulty": 1-5,
+    "trend": "Почему сейчас актуально (1 предложение)",
+    "first_step": "Первый шаг прямо сейчас (1 предложение)",
+    "rating": 1-5
+  }
+]
 
-
-def dual_analysis(user_message, agent_prompt):
-    try:
-        response1 = ask_smart([
-            {"role": "system", "content": agent_prompt},
-            {"role": "user", "content": user_message}
-        ])
-        answer1 = clean_response(response1.choices[0].message.content)
-
-        response2 = ask_analytic([
-            {"role": "system", "content": "Ты — аналитик. Прочитай ответ другого AI и добавь то, что он упустил. Если он всё покрыл — напиши 'Ответ полный'. Будь краток. Отвечай на языке ответа."},
-            {"role": "user", "content": "Вопрос: " + user_message[:300] + "\n\nОтвет:\n" + answer1[:1500] + "\n\nЧто упущено?"}
-        ])
-        check = response2.choices[0].message.content.strip()
-
-        if "полный" in check.lower() or "complete" in check.lower() or len(check) < 30:
-            return answer1
-        else:
-            return answer1 + "\n\n[ДОПОЛНИТЕЛЬНЫЙ АНАЛИЗ]\n" + check
-
-    except Exception:
-        response = ask_smart([
-            {"role": "system", "content": agent_prompt},
-            {"role": "user", "content": user_message}
-        ])
-        return clean_response(response.choices[0].message.content)
+Верни ТОЛЬКО JSON массив. Никакого другого текста."""
 
 
 AGENTS = {
@@ -110,69 +77,25 @@ AGENTS = {
         "name": "Диспетчер",
         "icon": "🧠",
         "color": "#58a6ff",
-        "prompt": """Ты — диспетчер. Определи лучшего агента.
+        "prompt": """Определи лучшего агента. Ответь ТОЛЬКО JSON: {"agent": "id", "reason": "почему"}
 
-Агенты:
-- scanner: соцсети, боли, Reddit/YouTube/Twitter
-- researcher: анализ рынка и ниши
-- idea_generator: бизнес-идеи
-- business_plan: бизнес-план
-- strategist: стратегия роста
-- marketer: маркетинг, воронки
-- developer: код, MVP
-- sales: продажи, скрипты
+Агенты: scanner (соцсети, боли), researcher (рынок), idea_generator (идеи), business_plan (план), strategist (стратегия), marketer (маркетинг), developer (код), sales (продажи)
 
-Правила:
-- "ниша", "рынок", "тренды" → researcher
-- "боли", "соцсети", "Reddit" → scanner
-- "идеи", "что создать" → idea_generator
-- "план", "финансы" → business_plan
-- "стратегия", "рост" → strategist
-- "реклама", "контент", "лендинг" → marketer
-- "код", "приложение", "MVP" → developer
-- "продажи", "скрипт" → sales
-
-Ответь ТОЛЬКО JSON:
-{"agent": "id", "reason": "почему"}"""
+Правила: "ниша/рынок" → researcher, "боли/соцсети" → scanner, "идеи" → idea_generator, "план" → business_plan, "стратегия" → strategist, "реклама/лендинг" → marketer, "код/MVP" → developer, "продажи/скрипт" → sales"""
     },
     "scanner": {
         "name": "Сканер соцсетей",
         "icon": "📡",
         "color": "#39d2c0",
-        "dual": True,
-        "prompt": """РОЛЬ: Лучший аналитик соцсетей, 10 лет опыта.
+        "prompt": """РОЛЬ: Аналитик соцсетей, 10 лет опыта.
 
-ФОРМАТ:
-
-[REDDIT]
-5 subreddit-ов:
-- r/название (~подписчики)
-- Жалоба: "цитата как пишут люди"
-- Upvotes/комментарии
-- Вывод для бизнеса
-
-[YOUTUBE]
-5 типов контента:
-- Тема — просмотры — боль из комментариев
-
-[TWITTER/X]
-5 тем:
-- Тренд — обсуждения — суть боли
-
-[TELEGRAM/ФОРУМЫ]
-5 тем:
-- Сообщество — тема — участники
-
-[GOOGLE TRENDS]
-5 запросов:
-- "запрос" — рост % — объём
-
-[КАРТА БОЛЕЙ]
-Топ-10:
-| # | Боль | Источники | Частота | Готовность платить (1-10) |
-
-[ЗОЛОТЫЕ ВОЗМОЖНОСТИ]
-3 ниши с болью 8+/10 и готовностью платить 7+/10.
+[REDDIT] 5 subreddit-ов с жалобами и цитатами
+[YOUTUBE] 5 тем с болями из комментариев
+[TWITTER/X] 5 горячих тем
+[TELEGRAM/ФОРУМЫ] 5 обсуждений
+[GOOGLE TRENDS] 5 растущих запросов
+[КАРТА БОЛЕЙ] Топ-10: боль, источники, частота, готовность платить
+[ЗОЛОТЫЕ ВОЗМОЖНОСТИ] 3 ниши с болью 8+/10
 
 Конкретные названия и цифры. Отвечай на языке пользователя."""
     },
@@ -180,26 +103,15 @@ AGENTS = {
         "name": "Генератор идей",
         "icon": "💡",
         "color": "#f59e0b",
-        "dual": True,
-        "prompt": """РОЛЬ: Серийный предприниматель, 15 стартапов, 5 сделали $1M+.
+        "prompt": """РОЛЬ: Серийный предприниматель, 15 стартапов.
 
-5 бизнес-идей от лучшей к худшей:
-
-═══════════════════════════════
-ИДЕЯ #N: [Название]
-Потенциал: (N/5)
-═══════════════════════════════
-- Боль: [с цитатой]
-- Решение: [1 предложение]
-- Формат: [SaaS/Бот/Курс/Маркетплейс]
-- Для кого: [возраст, профессия, доход]
-- Рынок: [TAM в $]
-- Монетизация: Free / Basic $X/мес / Pro $X/мес
-- CAC: $X | LTV: $X | Маржа: X%
-- Конкуренты: [2-3 реальных + слабости]
-- MVP 14 дней: по периодам
-- Первые 100 клиентов: 3 канала
-═══════════════════════════════
+5 бизнес-идей от лучшей к худшей. Для каждой:
+- Боль (с цитатой), Решение, Формат, Аудитория, Рынок TAM
+- Монетизация: Free / Basic / Pro с ценами
+- CAC, LTV, маржа
+- Конкуренты реальные
+- MVP 14 дней
+- Первые 100 клиентов
 
 Бюджет до $500, одному человеку. Отвечай на языке пользователя."""
     },
@@ -207,20 +119,16 @@ AGENTS = {
         "name": "Бизнес-планировщик",
         "icon": "📋",
         "color": "#8b5cf6",
-        "dual": True,
-        "prompt": """РОЛЬ: Консультант уровня McKinsey, 20 лет опыта.
+        "prompt": """РОЛЬ: Консультант McKinsey, 20 лет.
 
-[РЕЗЮМЕ] 3 предложения.
-[ПРОБЛЕМА] Боль + масштаб + плохие решения.
-[РЕШЕНИЕ] Продукт + 5 функций + отличия.
-[РЫНОК] TAM/SAM/SOM + аватар.
-[БИЗНЕС-МОДЕЛЬ] 3 тарифа + CAC, LTV, маржа.
-[MVP 14 ДНЕЙ] По дням.
-[МАРКЕТИНГ] 4 недели: канал, действие, бюджет, результат.
-[ФИНАНСЫ] Месяц 1-3, 4-6, 7-12. Точка безубыточности.
-[РИСКИ] 5 рисков + митигация.
-[ДОРОЖНАЯ КАРТА] Месяц 1, 3, 6, 12.
-[СЛЕДУЮЩИЙ ШАГ] Что сделать СЕГОДНЯ за 1 час.
+[РЕЗЮМЕ] [ПРОБЛЕМА] [РЕШЕНИЕ] [РЫНОК] TAM/SAM/SOM
+[БИЗНЕС-МОДЕЛЬ] 3 тарифа + unit-экономика
+[MVP 14 ДНЕЙ] По дням
+[МАРКЕТИНГ] 4 недели
+[ФИНАНСЫ] По месяцам + точка безубыточности
+[РИСКИ] 5 штук
+[ДОРОЖНАЯ КАРТА]
+[СЛЕДУЮЩИЙ ШАГ] Что сделать сегодня
 
 Для 1 человека с $500. Отвечай на языке пользователя."""
     },
@@ -228,32 +136,28 @@ AGENTS = {
         "name": "Исследователь",
         "icon": "🔍",
         "color": "#3fb950",
-        "dual": True,
         "prompt": """РОЛЬ: Аналитик рынка, 15 лет.
 
-[СКАНИРОВАНИЕ] Размер в $, стадия, рост %.
-[АУДИТОРИЯ] 3 сегмента: демография, боли, бюджет.
-[КОНКУРЕНТЫ] 5 штук: выручка, сильные/слабые, цены.
-[ТРЕНДЫ] 5 трендов с цифрами.
-[БОЛИ] 5 проблем + готовность платить.
-[ВЫВОД] Входить или нет + план.
+[СКАНИРОВАНИЕ] Размер, стадия, рост
+[АУДИТОРИЯ] 3 сегмента
+[КОНКУРЕНТЫ] 5 штук с ценами
+[ТРЕНДЫ] 5 с цифрами
+[БОЛИ] 5 с оценкой
+[ВЫВОД] Входить или нет + план
 
-Реальные компании и цифры. Отвечай на языке пользователя."""
+Реальные компании. Отвечай на языке пользователя."""
     },
     "strategist": {
         "name": "Стратег",
         "icon": "🎯",
         "color": "#f59e0b",
-        "dual": False,
-        "prompt": """РОЛЬ: Стратег, 50+ стартапов до $10M ARR.
+        "prompt": """РОЛЬ: Стратег, 50+ стартапов.
 
-[ПРОБЛЕМА] 1 предложение + масштаб.
-[РЕШЕНИЕ] Продукт + 3 отличия.
-[МОДЕЛЬ] 3 тарифа + upsell.
-[UNIT-ЭКОНОМИКА] CAC, LTV, маржа, payback.
-[MVP] 2 недели → первый платящий клиент.
-[GROWTH] 0→100, 100→1000, 1000→10000.
-[РИСКИ] 3 + план B.
+[ПРОБЛЕМА] [РЕШЕНИЕ] [МОДЕЛЬ] 3 тарифа
+[UNIT-ЭКОНОМИКА] CAC, LTV, маржа
+[MVP] 2 недели
+[GROWTH] 0→100, 100→1000, 1000→10000
+[РИСКИ] 3 + план B
 
 Конкретные цифры. Отвечай на языке пользователя."""
     },
@@ -261,16 +165,15 @@ AGENTS = {
         "name": "Маркетолог",
         "icon": "📢",
         "color": "#ec4899",
-        "dual": False,
-        "prompt": """РОЛЬ: Директор по маркетингу, 30+ продуктов.
+        "prompt": """РОЛЬ: Директор маркетинга, 30+ продуктов.
 
-[ПОЗИЦИОНИРОВАНИЕ] УТП + слоган.
-[КАНАЛЫ] 5 каналов: бюджет, CAC, действия.
-[КОНТЕНТ-ПЛАН] 14 дней.
-[ВОРОНКА] С конверсиями.
-[ЛЕНДИНГ] Hero, Problem, Solution, Benefits, CTA, FAQ.
-[ЗАПУСК] 7 дней.
-[МЕТРИКИ] 5 KPI.
+[ПОЗИЦИОНИРОВАНИЕ] УТП + слоган
+[КАНАЛЫ] 5 с бюджетами
+[КОНТЕНТ-ПЛАН] 14 дней
+[ВОРОНКА] С конверсиями
+[ЛЕНДИНГ] Полный текст
+[ЗАПУСК] 7 дней
+[МЕТРИКИ] 5 KPI
 
 Тексты готовы к копированию. Отвечай на языке пользователя."""
     },
@@ -278,15 +181,10 @@ AGENTS = {
         "name": "Разработчик",
         "icon": "💻",
         "color": "#3b82f6",
-        "dual": False,
-        "prompt": """РОЛЬ: Full-stack, 12 лет, быстрый MVP.
+        "prompt": """РОЛЬ: Full-stack, 12 лет.
 
-[АРХИТЕКТУРА] Стек + почему.
-[СТРУКТУРА] Дерево файлов.
-[КОД] Рабочий код.
-[API] Бесплатные.
-[ДЕПЛОЙ] Пошагово.
-[СРОКИ] Задача → часы.
+[АРХИТЕКТУРА] [СТРУКТУРА] [КОД] рабочий
+[API] бесплатные [ДЕПЛОЙ] пошагово [СРОКИ]
 
 Python + Flask. Отвечай на языке пользователя."""
     },
@@ -294,16 +192,13 @@ Python + Flask. Отвечай на языке пользователя."""
         "name": "Продажник",
         "icon": "🤝",
         "color": "#ef4444",
-        "dual": False,
         "prompt": """РОЛЬ: Директор продаж, 1000+ сделок.
 
-[ПРОДУКТ] Ценность.
-[АВАТАР] Клиент.
-[КОНТАКТ] 3 скрипта: email, LinkedIn, DM.
-[ПРЕЗЕНТАЦИЯ] 10 слайдов.
-[ВОЗРАЖЕНИЯ] 10 + ответы.
-[ЗАКРЫТИЕ] 5 техник.
-[FOLLOW-UP] 5 писем.
+[ПРОДУКТ] [АВАТАР] [КОНТАКТ] 3 скрипта
+[ПРЕЗЕНТАЦИЯ] 10 слайдов
+[ВОЗРАЖЕНИЯ] 10 + ответы
+[ЗАКРЫТИЕ] 5 техник
+[FOLLOW-UP] 5 писем
 
 Скрипты готовы к отправке. Отвечай на языке пользователя."""
     }
@@ -313,10 +208,8 @@ Python + Flask. Отвечай на языке пользователя."""
 conversations = {}
 projects = {}
 last_request_time = {}
-system_memory = {
-    "niches_analyzed": [],
-    "best_ideas": []
-}
+system_memory = {"niches_analyzed": [], "best_ideas": []}
+cached_auto_ideas = {"ideas": [], "timestamp": 0}
 
 
 def get_history(session_id):
@@ -342,12 +235,78 @@ def get_agents():
     for key, agent in AGENTS.items():
         if key == "router":
             continue
-        result[key] = {
-            "name": agent["name"],
-            "icon": agent["icon"],
-            "color": agent["color"]
-        }
+        result[key] = {"name": agent["name"], "icon": agent["icon"], "color": agent["color"]}
     return jsonify(result)
+
+
+@app.route("/api/auto-ideas", methods=["GET"])
+def auto_ideas():
+    global cached_auto_ideas
+
+    now = time.time()
+    if cached_auto_ideas["ideas"] and (now - cached_auto_ideas["timestamp"]) < 300:
+        return jsonify({"ideas": cached_auto_ideas["ideas"], "cached": True})
+
+    try:
+        response = ask_llm([
+            {"role": "system", "content": AUTO_IDEAS_PROMPT},
+            {"role": "user", "content": "Сгенерируй 7 трендовых бизнес-идей на 2025 год. Разные ниши. ТОЛЬКО JSON массив."}
+        ])
+
+        text = clean_response(response.choices[0].message.content)
+
+        start = text.find("[")
+        end = text.rfind("]") + 1
+        if start >= 0 and end > start:
+            text = text[start:end]
+
+        ideas = json.loads(text)
+
+        if isinstance(ideas, list) and len(ideas) > 0:
+            cached_auto_ideas = {"ideas": ideas, "timestamp": now}
+            return jsonify({"ideas": ideas, "cached": False})
+        else:
+            return jsonify({"ideas": [], "error": "Не удалось распарсить"}), 500
+
+    except json.JSONDecodeError:
+        return jsonify({"ideas": [], "error": "JSON parse error"}), 500
+    except Exception as e:
+        return jsonify({"ideas": [], "error": str(e)}), 500
+
+
+@app.route("/api/expand-idea", methods=["POST"])
+def expand_idea():
+    data = request.json
+    idea_title = data.get("title", "")
+    idea_niche = data.get("niche", "")
+
+    if not idea_title:
+        return jsonify({"error": "Нет идеи"}), 400
+
+    now = time.time()
+    if "expand" in last_request_time:
+        diff = now - last_request_time["expand"]
+        if diff < 5:
+            return jsonify({"error": "Подожди " + str(int(5 - diff)) + " сек."}), 429
+    last_request_time["expand"] = now
+
+    try:
+        response = ask_llm([
+            {"role": "system", "content": AGENTS["business_plan"]["prompt"]},
+            {"role": "user", "content": "Создай детальный бизнес-план для идеи: " + idea_title + " в нише: " + idea_niche + ". Максимум деталей, цифр, конкретики."}
+        ])
+        reply = clean_response(response.choices[0].message.content)
+
+        return jsonify({
+            "response": reply,
+            "agent_name": "Бизнес-планировщик",
+            "agent_icon": "📋",
+            "agent_color": "#8b5cf6",
+            "status": "ok"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/chat", methods=["POST"])
@@ -385,10 +344,10 @@ def chat():
                 clean = route_text.strip()
                 if "<think>" in clean:
                     clean = clean.split("</think>")[-1].strip()
-                start = clean.find("{")
-                end = clean.rfind("}") + 1
-                if start >= 0 and end > start:
-                    clean = clean[start:end]
+                s = clean.find("{")
+                e = clean.rfind("}") + 1
+                if s >= 0 and e > s:
+                    clean = clean[s:e]
                 route_data = json.loads(clean)
                 if "agent" in route_data:
                     routed_agent = route_data["agent"]
@@ -409,33 +368,17 @@ def chat():
         context = ""
         if project["knowledge_base"]:
             last_entries = project["knowledge_base"][-5:]
-            context = "\n\n[КОНТЕКСТ ПРОЕКТА]:\n"
+            context = "\n\n[КОНТЕКСТ]:\n"
             for entry in last_entries:
                 context += "- " + entry["agent"] + ": " + entry["summary"][:300] + "\n"
             context += "\n"
 
-        if system_memory["niches_analyzed"]:
-            context += "[ПАМЯТЬ]:\n"
-            for mem in system_memory["niches_analyzed"][-3:]:
-                context += "- " + mem["content"][:200] + "\n"
-            context += "\n"
-
         enriched = context + user_message if context else user_message
+        server_history.append({"role": "user", "content": enriched})
 
-        use_dual = agent.get("dual", False)
-
-        if use_dual:
-            reply = dual_analysis(enriched, agent["prompt"])
-        else:
-            server_history.append({"role": "user", "content": enriched})
-            messages = [{"role": "system", "content": agent["prompt"]}] + server_history
-            response = ask_smart(messages)
-            reply = clean_response(response.choices[0].message.content)
-
-        if not use_dual:
-            pass
-        else:
-            server_history.append({"role": "user", "content": enriched})
+        messages = [{"role": "system", "content": agent["prompt"]}] + server_history
+        response = ask_llm(messages)
+        reply = clean_response(response.choices[0].message.content)
 
         server_history.append({"role": "assistant", "content": reply})
 
@@ -447,43 +390,19 @@ def chat():
         })
 
         if routed_agent == "scanner":
-            system_memory["niches_analyzed"].append({
-                "content": "Ниша: " + user_message[:100] + " | " + reply[:200],
-                "timestamp": time.time()
-            })
-        elif routed_agent == "idea_generator":
-            system_memory["best_ideas"].append({
-                "content": reply[:300],
-                "timestamp": time.time()
-            })
-
-        if len(system_memory["niches_analyzed"]) > 20:
-            system_memory["niches_analyzed"] = system_memory["niches_analyzed"][-20:]
-        if len(system_memory["best_ideas"]) > 20:
-            system_memory["best_ideas"] = system_memory["best_ideas"][-20:]
+            system_memory["niches_analyzed"].append({"content": user_message[:100] + " | " + reply[:200], "timestamp": time.time()})
         if len(server_history) > 30:
             server_history[:] = server_history[-30:]
 
-        models_used = "dual (llama-3.3-70b + gemma2-9b)" if use_dual else "llama-3.3-70b"
-
-        result = {
-            "response": reply,
-            "agent": routed_agent,
-            "agent_name": agent["name"],
-            "agent_icon": agent["icon"],
-            "agent_color": agent["color"],
-            "models_used": models_used,
-            "status": "ok"
-        }
+        result = {"response": reply, "agent": routed_agent, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "status": "ok"}
         if route_info:
             result["route_info"] = route_info
-
         return jsonify(result)
 
     except Exception as e:
         error_msg = str(e)
         if "rate_limit" in error_msg.lower() or "429" in error_msg:
-            return jsonify({"error": "Подожди минуту — лимит."}), 429
+            return jsonify({"error": "Подожди минуту."}), 429
         return jsonify({"error": error_msg}), 500
 
 
@@ -504,52 +423,23 @@ def chain():
         agent = AGENTS.get(agent_id)
         if not agent:
             continue
-
         try:
             context = ""
             if results:
-                context = "\n\n[РЕЗУЛЬТАТЫ ПРЕДЫДУЩИХ АГЕНТОВ]:\n"
+                context = "\n\n[ПРЕДЫДУЩИЕ АГЕНТЫ]:\n"
                 for r in results:
                     context += "\n--- " + r["agent_name"] + " ---\n" + r["response"][:1500] + "\n"
-                context += "\n[ДОПОЛНИ И РАЗВЕЙ]\n\n"
+                context += "\n[ДОПОЛНИ]\n\n"
 
-            full_message = context + user_message
+            messages = [{"role": "system", "content": agent["prompt"]}, {"role": "user", "content": context + user_message}]
+            response = ask_llm(messages)
+            reply = clean_response(response.choices[0].message.content)
 
-            if agent.get("dual", False):
-                reply = dual_analysis(full_message, agent["prompt"])
-            else:
-                messages = [
-                    {"role": "system", "content": agent["prompt"]},
-                    {"role": "user", "content": full_message}
-                ]
-                response = ask_smart(messages)
-                reply = clean_response(response.choices[0].message.content)
-
-            project["knowledge_base"].append({
-                "agent": agent["name"],
-                "agent_id": agent_id,
-                "summary": reply[:500],
-                "timestamp": time.time()
-            })
-
-            results.append({
-                "agent": agent_id,
-                "agent_name": agent["name"],
-                "agent_icon": agent["icon"],
-                "agent_color": agent["color"],
-                "response": reply
-            })
-
+            project["knowledge_base"].append({"agent": agent["name"], "agent_id": agent_id, "summary": reply[:500], "timestamp": time.time()})
+            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "response": reply})
             time.sleep(2)
-
         except Exception as e:
-            results.append({
-                "agent": agent_id,
-                "agent_name": agent["name"],
-                "agent_icon": agent.get("icon", "?"),
-                "agent_color": agent.get("color", "#fff"),
-                "response": "Ошибка: " + str(e)
-            })
+            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent.get("icon", "?"), "agent_color": agent.get("color", "#fff"), "response": "Ошибка: " + str(e)})
             break
 
     return jsonify({"results": results, "status": "ok"})
@@ -568,71 +458,31 @@ def fullcycle():
     results = []
 
     steps = [
-        ("scanner", "Просканируй соцсети и найди боли в нише: " + niche),
+        ("scanner", "Просканируй соцсети, найди боли в нише: " + niche),
         ("idea_generator", None),
         ("business_plan", None)
     ]
 
     for i, (agent_id, custom_msg) in enumerate(steps):
         agent = AGENTS[agent_id]
-
         try:
             context = ""
             if results:
-                context = "\n\n[ДАННЫЕ ПРЕДЫДУЩИХ АГЕНТОВ]:\n"
+                context = "\n\n[ДАННЫЕ]:\n"
                 for r in results:
                     context += "\n--- " + r["agent_name"] + " ---\n" + r["response"][:2000] + "\n"
-                context += "\n[ИСПОЛЬЗУЙ ЭТИ ДАННЫЕ]\n\n"
+                context += "\n[ИСПОЛЬЗУЙ]\n\n"
 
-            if custom_msg:
-                msg = custom_msg
-            else:
-                msg = "На основе данных выше выполни задачу для: " + niche
+            msg = custom_msg if custom_msg else "На основе данных выше, выполни задачу для: " + niche
+            messages = [{"role": "system", "content": agent["prompt"]}, {"role": "user", "content": context + msg}]
+            response = ask_llm(messages)
+            reply = clean_response(response.choices[0].message.content)
 
-            full_message = context + msg
-
-            if agent.get("dual", False):
-                reply = dual_analysis(full_message, agent["prompt"])
-            else:
-                messages = [
-                    {"role": "system", "content": agent["prompt"]},
-                    {"role": "user", "content": full_message}
-                ]
-                response = ask_smart(messages)
-                reply = clean_response(response.choices[0].message.content)
-
-            project["knowledge_base"].append({
-                "agent": agent["name"],
-                "agent_id": agent_id,
-                "summary": reply[:500],
-                "timestamp": time.time()
-            })
-
-            system_memory["niches_analyzed"].append({
-                "content": "Ниша: " + niche + " | " + agent["name"] + " | " + reply[:200],
-                "timestamp": time.time()
-            })
-
-            results.append({
-                "agent": agent_id,
-                "agent_name": agent["name"],
-                "agent_icon": agent["icon"],
-                "agent_color": agent["color"],
-                "response": reply,
-                "step": i + 1
-            })
-
+            project["knowledge_base"].append({"agent": agent["name"], "agent_id": agent_id, "summary": reply[:500], "timestamp": time.time()})
+            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "response": reply, "step": i + 1})
             time.sleep(2)
-
         except Exception as e:
-            results.append({
-                "agent": agent_id,
-                "agent_name": agent["name"],
-                "agent_icon": agent["icon"],
-                "agent_color": agent["color"],
-                "response": "Ошибка: " + str(e),
-                "step": i + 1
-            })
+            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "response": "Ошибка: " + str(e), "step": i + 1})
             break
 
     return jsonify({"results": results, "niche": niche, "status": "ok"})
@@ -650,25 +500,19 @@ def reset():
     return jsonify({"status": "reset"})
 
 
-@app.route("/api/memory", methods=["GET"])
-def get_memory():
-    return jsonify(system_memory)
-
-
 @app.route("/api/templates", methods=["GET"])
 def get_templates():
-    templates = [
-        {"title": "/scan", "prompt": "Просканируй соцсети в нише: ", "desc": "📡 Reddit, YouTube, Twitter"},
-        {"title": "/ideas", "prompt": "Сгенерируй идеи для: ", "desc": "💡 5 идей"},
-        {"title": "/plan", "prompt": "Бизнес-план для: ", "desc": "📋 План"},
-        {"title": "/fullcycle", "prompt": "", "desc": "🚀 Скан + Идеи + План"},
-        {"title": "/research", "prompt": "Исследуй нишу: ", "desc": "🔍 Анализ"},
-        {"title": "/landing", "prompt": "Лендинг для: ", "desc": "📝 Текст"},
-        {"title": "/funnel", "prompt": "Воронка для: ", "desc": "📢 Воронка"},
-        {"title": "/script", "prompt": "Скрипт продаж для: ", "desc": "🤝 Продажи"},
-        {"title": "/mvp", "prompt": "MVP для: ", "desc": "💻 Код"}
-    ]
-    return jsonify(templates)
+    return jsonify([
+        {"title": "/scan", "prompt": "Просканируй соцсети: ", "desc": "📡 Соцсети"},
+        {"title": "/ideas", "prompt": "Идеи для: ", "desc": "💡 Идеи"},
+        {"title": "/plan", "prompt": "Бизнес-план: ", "desc": "📋 План"},
+        {"title": "/fullcycle", "prompt": "", "desc": "🚀 Полный цикл"},
+        {"title": "/research", "prompt": "Исследуй: ", "desc": "🔍 Рынок"},
+        {"title": "/landing", "prompt": "Лендинг: ", "desc": "📝 Текст"},
+        {"title": "/funnel", "prompt": "Воронка: ", "desc": "📢 Воронка"},
+        {"title": "/script", "prompt": "Скрипт: ", "desc": "🤝 Продажи"},
+        {"title": "/mvp", "prompt": "MVP: ", "desc": "💻 Код"}
+    ])
 
 
 if __name__ == "__main__":
