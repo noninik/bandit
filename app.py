@@ -14,6 +14,8 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL = "llama-3.3-70b-versatile"
 
 
+# ========== LLM FUNCTIONS ==========
+
 def ask_llm(messages):
     return client.chat.completions.create(
         model=MODEL,
@@ -39,6 +41,8 @@ def clean_response(reply):
             reply = parts[-1].strip()
     return reply
 
+
+# ========== PROMPTS ==========
 
 AUTO_IDEAS_PROMPT = """Ты — генератор трендовых бизнес-идей. Сгенерируй ровно 7 актуальных бизнес-идей на 2025 год.
 
@@ -146,6 +150,8 @@ COMPARE_PROMPT = """Ты — аналитик. Сравни бизнес-иде�
 Будь объективным. Конкретные аргументы. Отвечай на языке пользователя."""
 
 
+# ========== AGENTS ==========
+
 AGENTS = {
     "router": {
         "name": "Диспетчер",
@@ -249,6 +255,135 @@ Python + Flask. Отвечай на языке пользователя."""
 }
 
 
+# ========== LIVE DEBATE PROMPTS ==========
+
+LIVE_DEBATERS = [
+    {
+        "id": "strategist",
+        "name": "Стратег",
+        "icon": "🎯",
+        "color": "#f59e0b",
+        "prompt": """Ты — Стратег с 15-летним опытом запуска стартапов. Ты оцениваешь бизнес-потенциал идей.
+
+Тебе дали бизнес-идею. Ты ПЕРВЫЙ высказываешься.
+
+Правила:
+- Говори от первого лица
+- Будь эмоциональным, как живой человек
+- Оцени: размер рынка, бизнес-модель, потенциал роста
+- Укажи 1 главный плюс и 1 главный риск
+- 3-5 предложений максимум
+- Заверши фразой к другим: задай вопрос или брось вызов
+
+Отвечай на языке пользователя."""
+    },
+    {
+        "id": "marketer",
+        "name": "Маркетолог",
+        "icon": "📢",
+        "color": "#ec4899",
+        "prompt": """Ты — Маркетолог, 10 лет в digital-маркетинге. Ты оцениваешь продвижение и аудиторию.
+
+Тебе дали бизнес-идею. Ты видишь что сказал Стратег. Ты можешь СОГЛАСИТЬСЯ или СПОРИТЬ.
+
+Правила:
+- Говори от первого лица
+- Реагируй на слова Стратега (согласись, поспорь, дополни)
+- Оцени: целевая аудитория, каналы продвижения, стоимость привлечения
+- Будь конкретным: "я бы запустил рекламу в...", "аудитория будет..."
+- 3-5 предложений
+- Заверши вопросом к Разработчику или Продажнику
+
+Отвечай на языке пользователя."""
+    },
+    {
+        "id": "developer",
+        "name": "Разработчик",
+        "icon": "💻",
+        "color": "#3b82f6",
+        "prompt": """Ты — Разработчик, 12 лет full-stack. Ты оцениваешь техническую сложность.
+
+Тебе дали бизнес-идею. Ты видишь что сказали Стратег и Маркетолог. Можешь СПОРИТЬ с ними.
+
+Правила:
+- Говори от первого лица
+- Реагируй на предыдущих ("Стратег говорит X, но технически...")
+- Оцени: сложность MVP, стек технологий, сроки, подводные камни
+- Будь честным: если сложно — скажи прямо
+- 3-5 предложений
+- Заверши мнением: реально ли сделать MVP за 2 недели?
+
+Отвечай на языке пользователя."""
+    },
+    {
+        "id": "sales",
+        "name": "Продажник",
+        "icon": "🤝",
+        "color": "#ef4444",
+        "prompt": """Ты — Продажник, 1000+ закрытых сделок. Ты оцениваешь — купят ли это люди.
+
+Тебе дали бизнес-идею. Ты видишь что сказали Стратег, Маркетолог и Разработчик.
+
+Правила:
+- Говори от первого лица
+- Реагируй на ВСЕХ предыдущих, спорь или соглашайся
+- Оцени: кто заплатит, сколько, как продавать, главное возражение
+- Будь практичным: "я бы позвонил первым 10 клиентам и..."
+- 3-5 предложений
+
+Отвечай на языке пользователя."""
+    }
+]
+
+ROUND2_PROMPTS = [
+    {
+        "id": "strategist",
+        "name": "Стратег",
+        "icon": "🎯",
+        "color": "#f59e0b",
+        "prompt": "Ты Стратег. Ты услышал мнения всех. Ответь на критику, защити свою позицию или измени мнение. 2-3 предложения. Будь эмоциональным."
+    },
+    {
+        "id": "marketer",
+        "name": "Маркетолог",
+        "icon": "📢",
+        "color": "#ec4899",
+        "prompt": "Ты Маркетолог. Ты услышал всех. Спорь или соглашайся. Предложи 1 конкретное улучшение. 2-3 предложения."
+    },
+    {
+        "id": "developer",
+        "name": "Разработчик",
+        "icon": "💻",
+        "color": "#3b82f6",
+        "prompt": "Ты Разработчик. Ты услышал всех. Скажи что реально, а что нет. Предложи техническое решение. 2-3 предложения."
+    },
+    {
+        "id": "sales",
+        "name": "Продажник",
+        "icon": "🤝",
+        "color": "#ef4444",
+        "prompt": "Ты Продажник. Финальное слово. Купят или нет? Что изменить чтобы продавалось? 2-3 предложения."
+    }
+]
+
+VERDICT_PROMPT = """Ты — модератор дебатов. Ты видел спор 4 экспертов о бизнес-идее.
+
+На основе ВСЕХ мнений вынеси вердикт:
+
+Формат:
+[ВЕРДИКТ]
+Общая оценка: X/10
+Главный риск: ...
+Главное преимущество: ...
+Рекомендация: запускать / доработать / отказаться
+Первый конкретный шаг: ...
+Кто был прав больше всех: ...
+
+Будь объективным. 3-5 предложений. Отвечай на языке пользователя."""
+
+
+# ========== STATE ==========
+
 conversations = {}
 projects = {}
 last_request_time = {}
@@ -256,6 +391,8 @@ system_memory = {"niches_analyzed": [], "best_ideas": []}
 cached_auto_ideas = {"ideas": [], "timestamp": 0}
 niche_ratings = []
 
+
+# ========== HELPERS ==========
 
 def get_history(session_id):
     if session_id not in conversations:
@@ -269,6 +406,37 @@ def get_project(project_id):
     return projects[project_id]
 
 
+def add_niche_rating(idea):
+    global niche_ratings
+    rating_entry = {
+        "title": idea.get("title", ""),
+        "niche": idea.get("niche", ""),
+        "rating": idea.get("rating", 3),
+        "revenue": idea.get("revenue", "$0"),
+        "difficulty": idea.get("difficulty", 3),
+        "competition": idea.get("competition", "средняя"),
+        "market_size": idea.get("market_size", "$0"),
+        "format": idea.get("format", ""),
+        "timestamp": time.time()
+    }
+    niche_ratings.append(rating_entry)
+    niche_ratings.sort(key=lambda x: x.get("rating", 0), reverse=True)
+    if len(niche_ratings) > 50:
+        niche_ratings = niche_ratings[:50]
+
+
+def check_rate_limit(key, cooldown=5):
+    now = time.time()
+    if key in last_request_time:
+        diff = now - last_request_time[key]
+        if diff < cooldown:
+            return False, int(cooldown - diff)
+    last_request_time[key] = now
+    return True, 0
+
+
+# ========== ROUTES ==========
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -280,7 +448,11 @@ def get_agents():
     for key, agent in AGENTS.items():
         if key == "router":
             continue
-        result[key] = {"name": agent["name"], "icon": agent["icon"], "color": agent["color"]}
+        result[key] = {
+            "name": agent["name"],
+            "icon": agent["icon"],
+            "color": agent["color"]
+        }
     return jsonify(result)
 
 
@@ -324,12 +496,9 @@ def expand_idea():
     if not idea_title:
         return jsonify({"error": "Нет идеи"}), 400
 
-    now = time.time()
-    if "expand" in last_request_time:
-        diff = now - last_request_time["expand"]
-        if diff < 5:
-            return jsonify({"error": "Подожди " + str(int(5 - diff)) + " сек."}), 429
-    last_request_time["expand"] = now
+    allowed, wait = check_rate_limit("expand")
+    if not allowed:
+        return jsonify({"error": "Подожди " + str(wait) + " сек."}), 429
 
     try:
         response = ask_llm([
@@ -337,7 +506,13 @@ def expand_idea():
             {"role": "user", "content": "Детальный бизнес-план для: " + idea_title + " в нише: " + idea_niche}
         ])
         reply = clean_response(response.choices[0].message.content)
-        return jsonify({"response": reply, "agent_name": "Бизнес-план", "agent_icon": "📋", "agent_color": "#8b5cf6", "status": "ok"})
+        return jsonify({
+            "response": reply,
+            "agent_name": "Бизнес-план",
+            "agent_icon": "📋",
+            "agent_color": "#8b5cf6",
+            "status": "ok"
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -350,12 +525,9 @@ def debate():
     if not idea:
         return jsonify({"error": "Укажи идею"}), 400
 
-    now = time.time()
-    if "debate" in last_request_time:
-        diff = now - last_request_time["debate"]
-        if diff < 5:
-            return jsonify({"error": "Подожди " + str(int(5 - diff)) + " сек."}), 429
-    last_request_time["debate"] = now
+    allowed, wait = check_rate_limit("debate")
+    if not allowed:
+        return jsonify({"error": "Подожди " + str(wait) + " сек."}), 429
 
     try:
         response = ask_llm([
@@ -363,7 +535,125 @@ def debate():
             {"role": "user", "content": "Обсудите эту бизнес-идею командой: " + idea}
         ])
         reply = clean_response(response.choices[0].message.content)
-        return jsonify({"response": reply, "agent_name": "AI-Дебаты", "agent_icon": "🗣", "agent_color": "#f59e0b", "status": "ok"})
+        return jsonify({
+            "response": reply,
+            "agent_name": "AI-Дебаты",
+            "agent_icon": "🗣",
+            "agent_color": "#f59e0b",
+            "status": "ok"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/debate-live", methods=["POST"])
+def debate_live():
+    data = request.json
+    idea = data.get("idea", "").strip()
+
+    if not idea:
+        return jsonify({"error": "Укажи идею"}), 400
+
+    allowed, wait = check_rate_limit("debate_live")
+    if not allowed:
+        return jsonify({"error": "Подожди " + str(wait) + " сек."}), 429
+
+    results = []
+    conversation = []
+
+    try:
+        # ===== РАУНД 1 — Первые мнения =====
+        for debater in LIVE_DEBATERS:
+            context = ""
+            if conversation:
+                context = "\n\nЧто сказали до тебя:\n"
+                for prev in conversation:
+                    context += prev["icon"] + " " + prev["name"] + ": " + prev["text"] + "\n"
+
+            messages = [
+                {"role": "system", "content": debater["prompt"]},
+                {"role": "user", "content": "Бизнес-идея: " + idea + context}
+            ]
+
+            response = ask_fast(messages)
+            reply = clean_response(response.choices[0].message.content)
+
+            conversation.append({
+                "name": debater["name"],
+                "icon": debater["icon"],
+                "text": reply
+            })
+
+            results.append({
+                "agent_id": debater["id"],
+                "agent_name": debater["name"],
+                "agent_icon": debater["icon"],
+                "agent_color": debater["color"],
+                "response": reply,
+                "round": 1
+            })
+
+            time.sleep(1)
+
+        # ===== РАУНД 2 — Дебаты и спор =====
+        full_context = "\n\nВся дискуссия:\n"
+        for prev in conversation:
+            full_context += prev["icon"] + " " + prev["name"] + ": " + prev["text"] + "\n"
+
+        for r2 in ROUND2_PROMPTS:
+            messages = [
+                {"role": "system", "content": r2["prompt"] + "\nОтвечай на языке пользователя."},
+                {"role": "user", "content": "Идея: " + idea + full_context}
+            ]
+
+            response = ask_fast(messages)
+            reply = clean_response(response.choices[0].message.content)
+
+            conversation.append({
+                "name": r2["name"],
+                "icon": r2["icon"],
+                "text": reply
+            })
+
+            results.append({
+                "agent_id": r2["id"],
+                "agent_name": r2["name"],
+                "agent_icon": r2["icon"],
+                "agent_color": r2["color"],
+                "response": reply,
+                "round": 2
+            })
+
+            time.sleep(1)
+
+        # ===== РАУНД 3 — Вердикт =====
+        full_debate = "\n\nПолная дискуссия:\n"
+        for prev in conversation:
+            full_debate += prev["icon"] + " " + prev["name"] + ": " + prev["text"] + "\n"
+
+        verdict_messages = [
+            {"role": "system", "content": VERDICT_PROMPT},
+            {"role": "user", "content": "Идея: " + idea + full_debate}
+        ]
+
+        verdict_response = ask_fast(verdict_messages)
+        verdict_reply = clean_response(verdict_response.choices[0].message.content)
+
+        results.append({
+            "agent_id": "verdict",
+            "agent_name": "Вердикт",
+            "agent_icon": "⚖️",
+            "agent_color": "#8b5cf6",
+            "response": verdict_reply,
+            "round": 3
+        })
+
+        return jsonify({
+            "results": results,
+            "idea": idea,
+            "status": "ok"
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -376,12 +666,9 @@ def compare():
     if len(ideas) < 2:
         return jsonify({"error": "Выбери минимум 2 идеи"}), 400
 
-    now = time.time()
-    if "compare" in last_request_time:
-        diff = now - last_request_time["compare"]
-        if diff < 5:
-            return jsonify({"error": "Подожди " + str(int(5 - diff)) + " сек."}), 429
-    last_request_time["compare"] = now
+    allowed, wait = check_rate_limit("compare")
+    if not allowed:
+        return jsonify({"error": "Подожди " + str(wait) + " сек."}), 429
 
     ideas_text = ""
     for i, idea in enumerate(ideas):
@@ -393,28 +680,15 @@ def compare():
             {"role": "user", "content": "Сравни эти бизнес-идеи:" + ideas_text}
         ])
         reply = clean_response(response.choices[0].message.content)
-        return jsonify({"response": reply, "agent_name": "Сравнение", "agent_icon": "⚖️", "agent_color": "#8b5cf6", "status": "ok"})
+        return jsonify({
+            "response": reply,
+            "agent_name": "Сравнение",
+            "agent_icon": "⚖️",
+            "agent_color": "#8b5cf6",
+            "status": "ok"
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-def add_niche_rating(idea):
-    global niche_ratings
-    rating_entry = {
-        "title": idea.get("title", ""),
-        "niche": idea.get("niche", ""),
-        "rating": idea.get("rating", 3),
-        "revenue": idea.get("revenue", "$0"),
-        "difficulty": idea.get("difficulty", 3),
-        "competition": idea.get("competition", "средняя"),
-        "market_size": idea.get("market_size", "$0"),
-        "format": idea.get("format", ""),
-        "timestamp": time.time()
-    }
-    niche_ratings.append(rating_entry)
-    niche_ratings.sort(key=lambda x: x.get("rating", 0), reverse=True)
-    if len(niche_ratings) > 50:
-        niche_ratings = niche_ratings[:50]
 
 
 @app.route("/api/niche-ratings", methods=["GET"])
@@ -469,12 +743,9 @@ def chat():
     if not user_message:
         return jsonify({"error": "Пустое сообщение"}), 400
 
-    now = time.time()
-    if session_id in last_request_time:
-        diff = now - last_request_time[session_id]
-        if diff < 3:
-            return jsonify({"error": "Подожди " + str(int(3 - diff)) + " сек."}), 429
-    last_request_time[session_id] = now
+    allowed, wait = check_rate_limit(session_id, 3)
+    if not allowed:
+        return jsonify({"error": "Подожди " + str(wait) + " сек."}), 429
 
     project = get_project(project_id)
     routed_agent = agent_id
@@ -528,12 +799,24 @@ def chat():
         reply = clean_response(response.choices[0].message.content)
 
         server_history.append({"role": "assistant", "content": reply})
-        project["knowledge_base"].append({"agent": agent["name"], "agent_id": routed_agent, "summary": reply[:500], "timestamp": time.time()})
+        project["knowledge_base"].append({
+            "agent": agent["name"],
+            "agent_id": routed_agent,
+            "summary": reply[:500],
+            "timestamp": time.time()
+        })
 
         if len(server_history) > 30:
             server_history[:] = server_history[-30:]
 
-        result = {"response": reply, "agent": routed_agent, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "status": "ok"}
+        result = {
+            "response": reply,
+            "agent": routed_agent,
+            "agent_name": agent["name"],
+            "agent_icon": agent["icon"],
+            "agent_color": agent["color"],
+            "status": "ok"
+        }
         if route_info:
             result["route_info"] = route_info
         return jsonify(result)
@@ -569,14 +852,34 @@ def chain():
                 for r in results:
                     context += "\n--- " + r["agent_name"] + " ---\n" + r["response"][:1500] + "\n"
                 context += "\n[ДОПОЛНИ]\n\n"
-            messages = [{"role": "system", "content": agent["prompt"]}, {"role": "user", "content": context + user_message}]
+            messages = [
+                {"role": "system", "content": agent["prompt"]},
+                {"role": "user", "content": context + user_message}
+            ]
             response = ask_llm(messages)
             reply = clean_response(response.choices[0].message.content)
-            project["knowledge_base"].append({"agent": agent["name"], "agent_id": agent_id, "summary": reply[:500], "timestamp": time.time()})
-            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "response": reply})
+            project["knowledge_base"].append({
+                "agent": agent["name"],
+                "agent_id": agent_id,
+                "summary": reply[:500],
+                "timestamp": time.time()
+            })
+            results.append({
+                "agent": agent_id,
+                "agent_name": agent["name"],
+                "agent_icon": agent["icon"],
+                "agent_color": agent["color"],
+                "response": reply
+            })
             time.sleep(2)
         except Exception as e:
-            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent.get("icon", "?"), "agent_color": agent.get("color", "#fff"), "response": "Ошибка: " + str(e)})
+            results.append({
+                "agent": agent_id,
+                "agent_name": agent["name"],
+                "agent_icon": agent.get("icon", "?"),
+                "agent_color": agent.get("color", "#fff"),
+                "response": "Ошибка: " + str(e)
+            })
             break
 
     return jsonify({"results": results, "status": "ok"})
@@ -610,14 +913,36 @@ def fullcycle():
                     context += "\n--- " + r["agent_name"] + " ---\n" + r["response"][:2000] + "\n"
                 context += "\n[ИСПОЛЬЗУЙ]\n\n"
             msg = custom_msg if custom_msg else "На основе данных, задача для: " + niche
-            messages = [{"role": "system", "content": agent["prompt"]}, {"role": "user", "content": context + msg}]
+            messages = [
+                {"role": "system", "content": agent["prompt"]},
+                {"role": "user", "content": context + msg}
+            ]
             response = ask_llm(messages)
             reply = clean_response(response.choices[0].message.content)
-            project["knowledge_base"].append({"agent": agent["name"], "agent_id": agent_id, "summary": reply[:500], "timestamp": time.time()})
-            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "response": reply, "step": i + 1})
+            project["knowledge_base"].append({
+                "agent": agent["name"],
+                "agent_id": agent_id,
+                "summary": reply[:500],
+                "timestamp": time.time()
+            })
+            results.append({
+                "agent": agent_id,
+                "agent_name": agent["name"],
+                "agent_icon": agent["icon"],
+                "agent_color": agent["color"],
+                "response": reply,
+                "step": i + 1
+            })
             time.sleep(2)
         except Exception as e:
-            results.append({"agent": agent_id, "agent_name": agent["name"], "agent_icon": agent["icon"], "agent_color": agent["color"], "response": "Ошибка: " + str(e), "step": i + 1})
+            results.append({
+                "agent": agent_id,
+                "agent_name": agent["name"],
+                "agent_icon": agent["icon"],
+                "agent_color": agent["color"],
+                "response": "Ошибка: " + str(e),
+                "step": i + 1
+            })
             break
 
     return jsonify({"results": results, "niche": niche, "status": "ok"})
@@ -649,6 +974,8 @@ def get_templates():
         {"title": "/mvp", "prompt": "MVP: ", "desc": "💻 Код"}
     ])
 
+
+# ========== RUN ==========
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
