@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Бизнес-Агент</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Боковая панель -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 AI Агент</h1>
+                <p>Бизнес-помощник на Gemini</p>
+            </div>
+
+            <div class="templates" id="templates">
+                <h3>Быстрые команды</h3>
+                <!-- Шаблоны загрузятся через JS -->
+            </div>
+
+            <button class="btn-reset" onclick="resetChat()">
+                🔄 Новый диалог
+            </button>
+        </aside>
+
+        <!-- Основная область -->
+        <main class="chat-area">
+            <div class="messages" id="messages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        <p>👋 Привет! Я твой AI-агент для бизнеса.</p>
+                        <p>Я могу:</p>
+                        <ul>
+                            <li>Анализировать рыночные ниши</li>
+                            <li>Генерировать бизнес-идеи</li>
+                            <li>Декомпозировать задачи</li>
+                            <li>Писать тексты для лендингов</li>
+                            <li>Составлять бизнес-планы</li>
+                        </ul>
+                        <p>Опиши свою задачу или выбери шаблон слева 👈</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea
+                        id="userInput"
+                        placeholder="Опиши задачу для агента..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                    ></textarea>
+                    <button onclick="sendMessage()" id="sendBtn">
+                        ➤
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
