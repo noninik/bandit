@@ -3,99 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Бизнес-Агент</title>
+    <title>AI Agent System</title>
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
     <div class="app">
-        <!-- Боковая панель -->
+        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <span class="logo-icon">🤖</span>
-                    <div>
-                        <h1>AI Агент</h1>
-                        <p class="logo-sub">Бизнес-помощник</p>
+            <!-- Agents -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">
+                    <span class="folder-icon">▼</span> AGENTS
+                </div>
+                <div id="agentsList"></div>
+            </div>
+
+            <!-- Auto-routing toggle -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">
+                    <span class="folder-icon">▼</span> MODE
+                </div>
+                <div class="mode-toggle">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="autoRoute" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">🧠 Auto-routing</span>
+                    </label>
+                    <p class="mode-desc">Диспетчер сам выбирает агента</p>
+                </div>
+            </div>
+
+            <!-- Chains -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">
+                    <span class="folder-icon">▼</span> CHAINS
+                </div>
+                <div class="chain-buttons">
+                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Полный анализ')">
+                        🔥 Полный цикл
+                        <span class="chain-desc">Research → Strategy → Marketing</span>
+                    </button>
+                    <button class="chain-btn" onclick="runChain(['researcher','developer'], 'Техническое исследование')">
+                        🛠 Техническая проверка
+                        <span class="chain-desc">Research → Development</span>
+                    </button>
+                    <button class="chain-btn" onclick="runChain(['strategist','sales'], 'Продажи')">
+                        💰 Стратегия продаж
+                        <span class="chain-desc">Strategy → Sales</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Commands -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">
+                    <span class="folder-icon">▼</span> COMMANDS
+                </div>
+                <div id="commandsList"></div>
+            </div>
+
+            <!-- Session -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">
+                    <span class="folder-icon">▼</span> SESSION
+                </div>
+                <div class="session-info">
+                    <div class="session-row"><span>📊</span><span>messages: <span id="msgCount">0</span></span></div>
+                    <div class="session-row"><span>🤖</span><span>agents used: <span id="agentsUsed">0</span></span></div>
+                    <div class="session-row"><span>🕐</span><span>uptime: <span id="uptime">00:00</span></span></div>
+                    <div class="session-row"><span>📁</span><span>project: <span id="projectName">default</span></span></div>
+                </div>
+            </div>
+
+            <!-- Quests -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">
+                    <span class="folder-icon">▼</span> QUESTS
+                </div>
+                <div class="quests-list" id="questsList">
+                    <div class="quest-item">
+                        <div class="quest-check" id="q1">☐</div>
+                        <span>Исследовать первую нишу</span>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-check" id="q2">☐</div>
+                        <span>Запустить цепочку агентов</span>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-check" id="q3">☐</div>
+                        <span>Получить бизнес-план</span>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-check" id="q4">☐</div>
+                        <span>Создать скрипт продаж</span>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-check" id="q5">☐</div>
+                        <span>Экспортировать результат</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Статистика -->
-            <div class="stats-card">
-                <div class="stats-row">
-                    <span>💬 Сообщений</span>
-                    <span id="msgCount">0</span>
-                </div>
-                <div class="stats-row">
-                    <span>📅 Сессий</span>
-                    <span id="sessionCount">1</span>
-                </div>
-            </div>
-
-            <div class="templates" id="templates">
-                <h3>⚡ Быстрые команды</h3>
             </div>
 
             <div class="sidebar-footer">
-                <button class="btn-export" onclick="exportChat()">
-                    📥 Сохранить чат
-                </button>
-                <button class="btn-reset" onclick="resetChat()">
-                    🔄 Новый диалог
-                </button>
+                <button class="sidebar-btn" onclick="exportChat()">📥 Export</button>
+                <button class="sidebar-btn danger" onclick="resetChat()">🗑 Clear</button>
             </div>
         </aside>
 
-        <!-- Кнопка мобильного меню -->
-        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
 
-        <!-- Основная область -->
-        <main class="chat-area">
-            <!-- Уведомление о восстановлении -->
-            <div class="restored-notice" id="restoredNotice" style="display:none">
-                <span>💾 История восстановлена</span>
-                <button onclick="this.parentElement.style.display='none'">✕</button>
-            </div>
-
-            <div class="messages" id="messages">
-                <div class="welcome" id="welcome">
-                    <div class="welcome-icon">🤖</div>
-                    <h2>Привет! Я твой AI-агент</h2>
-                    <p>Опиши задачу или выбери шаблон слева</p>
-                    <div class="welcome-cards">
-                        <div class="welcome-card" onclick="quickPrompt('Проанализируй нишу онлайн-образования в 2025 году')">
-                            <span>🔍</span>
-                            <p>Анализ ниши</p>
-                        </div>
-                        <div class="welcome-card" onclick="quickPrompt('Предложи 5 бизнес-идей с бюджетом 50000 рублей')">
-                            <span>💡</span>
-                            <p>Идеи для старта</p>
-                        </div>
-                        <div class="welcome-card" onclick="quickPrompt('Составь бизнес-план для интернет-магазина')">
-                            <span>📊</span>
-                            <p>Бизнес-план</p>
-                        </div>
-                    </div>
+        <!-- Terminal -->
+        <main class="terminal-area">
+            <div class="tab-bar">
+                <div class="tab active"><span class="tab-icon">⚡</span> AGENT TERMINAL</div>
+                <div class="tab-status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Ready</span>
                 </div>
             </div>
 
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <textarea
-                        id="userInput"
-                        placeholder="Опиши задачу..."
-                        rows="1"
-                        onkeydown="handleKeyDown(event)"
-                    ></textarea>
-                    <button onclick="sendMessage()" id="sendBtn" title="Отправить">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
-                    </button>
+            <div class="terminal" id="terminal">
+                <div class="terminal-welcome">
+                    <pre class="ascii-art">
+    ╔══════════════════════════════════════════════╗
+    ║       AI  AGENT  ARMY  SYSTEM  v3.0         ║
+    ║       Digital Workforce Platform             ║
+    ╚══════════════════════════════════════════════╝</pre>
+                    <div class="init-log"><span class="log-success">✓</span> System initialized</div>
+                    <div class="init-log"><span class="log-success">✓</span> Groq API connected</div>
+                    <div class="init-log"><span class="log-success">✓</span> 5 agents loaded: Researcher, Strategist, Marketer, Developer, Sales</div>
+                    <div class="init-log"><span class="log-success">✓</span> Auto-routing enabled (AI dispatcher)</div>
+                    <div class="init-log"><span class="log-success">✓</span> Chain execution ready</div>
+                    <div class="init-log"><span class="log-info">ℹ</span> Type a task → AI picks the best agent</div>
+                    <div class="init-log"><span class="log-info">ℹ</span> Use CHAINS for multi-agent workflows</div>
+                    <div class="init-log"><span class="log-info">ℹ</span> Complete QUESTS to master the system</div>
                 </div>
-                <div class="input-hint">Enter — отправить · Shift+Enter — новая строка</div>
+            </div>
+
+            <div class="input-bar">
+                <div class="input-prompt">
+                    <span class="prompt-agent" id="promptAgent">🧠</span>
+                    <span class="prompt-arrow">❯</span>
+                </div>
+                <textarea
+                    id="userInput"
+                    placeholder="Describe your task... AI will pick the right agent"
+                    rows="1"
+                    onkeydown="handleKeyDown(event)"
+                    spellcheck="false"
+                ></textarea>
+                <button onclick="sendMessage()" id="sendBtn">▶</button>
             </div>
         </main>
     </div>
