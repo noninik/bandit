@@ -1,16 +1,15 @@
 import os
+import time
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
-import google.generativeai as genai
+from groq import Groq
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# Настройка Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Системный промпт — здесь определяется "личность" агента
 SYSTEM_PROMPT = """Ты — AI-агент для бизнеса. Твои возможности:
 
 1. АНАЛИЗ РЫНКА: Когда пользователь описывает нишу, ты анализируешь:
@@ -31,18 +30,14 @@ SYSTEM_PROMPT = """Ты — AI-агент для бизнеса. Твои воз
 Будь конкретным — никакой воды. Давай actionable советы.
 Отвечай на том языке, на котором пишет пользователь."""
 
-# Хранение истории разговоров (в памяти сервера)
+# История разговоров
 conversations = {}
+last_request_time = {}
 
 
-def get_or_create_chat(session_id):
-    """Создаёт или возвращает существующий чат"""
+def get_history(session_id):
     if session_id not in conversations:
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=SYSTEM_PROMPT
-        )
-        conversations[session_id] = model.start_chat(history=[])
+        conversations[session_id] = []
     return conversations[session_id]
 
 
@@ -60,15 +55,48 @@ def chat():
     if not user_message:
         return jsonify({"error": "Пустое сообщение"}), 400
 
+    # Защита от спама: не чаще 1 запроса в 3 секунды
+    now = time.time()
+    if session_id in last_request_time:
+        diff = now - last_request_time[session_id]
+        if diff < 3:
+            return jsonify({
+                "error": f"Подожди {int(3 - diff)} сек."
+            }), 429
+    last_request_time[session_id] = now
+
     try:
-        chat_session = get_or_create_chat(session_id)
-        response = chat_session.send_message(user_message)
+        history = get_history(session_id)
+        history.append({"role": "user", "content": user_message})
+
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=4096
+        )
+
+        reply = response.choices[0].message.content
+        history.append({"role": "assistant", "content": reply})
+
+        # Храним максимум 20 сообщений чтобы не превышать лимиты
+        if len(history) > 20:
+            history[:] = history[-20:]
+
         return jsonify({
-            "response": response.text,
+            "response": reply,
             "status": "ok"
         })
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        error_msg = str(e)
+        if "rate_limit" in error_msg.lower() or "429" in error_msg:
+            return jsonify({
+                "error": "⏳ Слишком много запросов. Подожди минуту."
+            }), 429
+        return jsonify({"error": error_msg}), 500
 
 
 @app.route("/api/reset", methods=["POST"])
@@ -80,7 +108,6 @@ def reset():
     return jsonify({"status": "reset"})
 
 
-# Готовые шаблоны запросов
 @app.route("/api/templates", methods=["GET"])
 def get_templates():
     templates = [
