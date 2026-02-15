@@ -33,11 +33,10 @@
                     <input type="text" id="nicheInput" placeholder="Введи нишу..." class="niche-input">
                     <button class="fullcycle-btn" onclick="runFullCycle()">
                         🚀 Полный цикл
-                        <span class="fullcycle-desc">Скан → Идеи → План → Карточка</span>
+                        <span class="fullcycle-desc">Скан → Идеи → План</span>
                     </button>
                     <button class="generate-btn" onclick="quickGenerate()">
                         ⚡ Быстрая генерация
-                        <span class="fullcycle-desc">Только бизнес-идеи</span>
                     </button>
                 </div>
             </div>
@@ -46,8 +45,8 @@
                 <div class="sidebar-title"><span class="folder-icon">▼</span> CHAINS</div>
                 <div class="chain-buttons">
                     <button class="chain-btn" onclick="runChain(['scanner','idea_generator','business_plan'], 'Полный')">🔥 Скан → Идеи → План</button>
-                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Стратегия')">📊 Анализ → Стратегия → Маркетинг</button>
-                    <button class="chain-btn" onclick="runChain(['strategist','developer'], 'Тех')">🛠 Стратегия → Разработка</button>
+                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Стратегия')">📊 Анализ → Стратегия</button>
+                    <button class="chain-btn" onclick="runChain(['strategist','developer'], 'Тех')">🛠 Стратегия → MVP</button>
                     <button class="chain-btn" onclick="runChain(['marketer','sales'], 'Продажи')">💰 Маркетинг → Продажи</button>
                 </div>
             </div>
@@ -70,11 +69,13 @@
             <div class="sidebar-section">
                 <div class="sidebar-title"><span class="folder-icon">▼</span> QUESTS</div>
                 <div id="questsList">
-                    <div class="quest-item"><div class="quest-check" id="q1">☐</div><span>Сканировать соцсети</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q1">☐</div><span>Сканировать</span></div>
                     <div class="quest-item"><div class="quest-check" id="q2">☐</div><span>Полный цикл</span></div>
                     <div class="quest-item"><div class="quest-check" id="q3">☐</div><span>Бизнес-план</span></div>
                     <div class="quest-item"><div class="quest-check" id="q4">☐</div><span>3+ агентов</span></div>
-                    <div class="quest-item"><div class="quest-check" id="q5">☐</div><span>Экспорт</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q5">☐</div><span>Дебаты</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q6">☐</div><span>Сравнение</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q7">☐</div><span>Экспорт</span></div>
                 </div>
             </div>
 
@@ -86,13 +87,17 @@
 
         <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
 
-        <!-- Main Content — Split Screen -->
+        <!-- Main -->
         <main class="main-content">
+            <!-- Tabs -->
             <div class="tab-bar">
                 <div class="tab-group">
-                    <div class="tab active" onclick="showPanel('both')"><span class="tab-icon">⚡</span> ALL</div>
-                    <div class="tab" onclick="showPanel('plans')"><span class="tab-icon">📋</span> PLANS</div>
-                    <div class="tab" onclick="showPanel('terminal')"><span class="tab-icon">💬</span> TERMINAL</div>
+                    <div class="tab active" onclick="showPanel('all')"><span class="tab-icon">⚡</span> ALL</div>
+                    <div class="tab" onclick="showPanel('dash')"><span class="tab-icon">📊</span> DASH</div>
+                    <div class="tab" onclick="showPanel('rank')"><span class="tab-icon">🏆</span> RANK</div>
+                    <div class="tab" onclick="showPanel('board')"><span class="tab-icon">📋</span> BOARD</div>
+                    <div class="tab" onclick="showPanel('plans')"><span class="tab-icon">💡</span> IDEAS</div>
+                    <div class="tab" onclick="showPanel('terminal')"><span class="tab-icon">💬</span> CHAT</div>
                 </div>
                 <div class="tab-status">
                     <span class="status-dot" id="statusDot"></span>
@@ -100,51 +105,133 @@
                 </div>
             </div>
 
-            <div class="split-screen" id="splitScreen">
-                <!-- Left: Business Plans Cards -->
-                <div class="plans-panel" id="plansPanel">
-                    <div class="plans-header">
-                        <h3>📋 Бизнес-планы</h3>
-                        <span class="plans-count" id="plansCardCount">0</span>
+            <!-- Panels Container -->
+            <div class="panels-container" id="panelsContainer">
+
+                <!-- Dashboard Panel -->
+                <div class="panel" id="dashPanel" style="display:none">
+                    <div class="dash-grid">
+                        <div class="dash-card">
+                            <div class="dash-card-title">💡 Всего идей</div>
+                            <div class="dash-card-value" id="dashTotalIdeas">0</div>
+                        </div>
+                        <div class="dash-card">
+                            <div class="dash-card-title">⭐ Средний рейтинг</div>
+                            <div class="dash-card-value" id="dashAvgRating">0</div>
+                        </div>
+                        <div class="dash-card">
+                            <div class="dash-card-title">💬 Сообщений</div>
+                            <div class="dash-card-value" id="dashMessages">0</div>
+                        </div>
+                        <div class="dash-card">
+                            <div class="dash-card-title">🤖 Агентов</div>
+                            <div class="dash-card-value" id="dashAgents">0</div>
+                        </div>
                     </div>
-                    <div class="plans-list" id="plansList">
-                        <div class="plans-empty" id="plansEmpty">
-                            <div class="empty-icon">📋</div>
-                            <p>Пока нет планов</p>
-                            <p class="empty-hint">Введи нишу слева и нажми 🚀 Полный цикл</p>
+                    <div class="dash-section">
+                        <h3>📊 Ниши по популярности</h3>
+                        <div class="dash-bars" id="dashNicheBars"></div>
+                    </div>
+                    <div class="dash-section">
+                        <h3>📦 Форматы продуктов</h3>
+                        <div class="dash-bars" id="dashFormatBars"></div>
+                    </div>
+                    <div class="dash-section">
+                        <h3>🏆 Топ-5 идей</h3>
+                        <div class="dash-top-list" id="dashTopList"></div>
+                    </div>
+                </div>
+
+                <!-- Rank Panel -->
+                <div class="panel" id="rankPanel" style="display:none">
+                    <div class="rank-header">
+                        <h3>🏆 Рейтинг ниш</h3>
+                        <button class="rank-refresh" onclick="loadRankings()">🔄</button>
+                    </div>
+                    <div class="rank-table" id="rankTable">
+                        <div class="rank-empty">Генерируй идеи чтобы заполнить рейтинг</div>
+                    </div>
+                </div>
+
+                <!-- Board Panel (Kanban) -->
+                <div class="panel" id="boardPanel" style="display:none">
+                    <div class="kanban">
+                        <div class="kanban-col">
+                            <div class="kanban-col-header idea-col">💡 Идеи</div>
+                            <div class="kanban-list" id="kanbanIdeas"></div>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-col-header research-col">🔍 Исследование</div>
+                            <div class="kanban-list" id="kanbanResearch"></div>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-col-header mvp-col">🛠 MVP</div>
+                            <div class="kanban-list" id="kanbanMvp"></div>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-col-header launch-col">🚀 Запуск</div>
+                            <div class="kanban-list" id="kanbanLaunch"></div>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-col-header money-col">💰 Доход</div>
+                            <div class="kanban-list" id="kanbanMoney"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Divider -->
-                <div class="panel-divider" id="panelDivider"></div>
+                <!-- Split: Ideas + Terminal -->
+                <div class="split-screen" id="splitScreen">
+                    <!-- Ideas -->
+                    <div class="plans-panel" id="plansPanel">
+                        <div class="plans-header">
+                            <h3>💡 Бизнес-идеи</h3>
+                            <div class="plans-header-actions">
+                                <button onclick="refreshIdeas()" class="plans-refresh-btn">🔄</button>
+                                <button onclick="compareSelected()" class="plans-compare-btn" id="compareBtn" style="display:none">⚖️ Сравнить</button>
+                                <span class="plans-count" id="plansCardCount">0</span>
+                            </div>
+                        </div>
+                        <div class="plans-list" id="plansList">
+                            <div class="plans-empty" id="plansEmpty">
+                                <div class="empty-icon">💡</div>
+                                <p>Генерация идей...</p>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- Right: Terminal -->
-                <div class="terminal-panel" id="terminalPanel">
-                    <div class="terminal" id="terminal">
-                        <div class="terminal-welcome">
-                            <pre class="ascii-art">
+                    <div class="panel-divider" id="panelDivider"></div>
+
+                    <!-- Terminal -->
+                    <div class="terminal-panel" id="terminalPanel">
+                        <div class="terminal" id="terminal">
+                            <div class="terminal-welcome">
+                                <pre class="ascii-art">
  ╔═══════════════════════════════════════════╗
- ║     AI  AGENT  ARMY  v5.0                ║
- ║     Split View + Business Plans           ║
+ ║     AI  AGENT  ARMY  v6.0                ║
+ ║     Debates + Dashboard + Kanban          ║
  ╚═══════════════════════════════════════════╝</pre>
-                            <div class="init-log"><span class="log-success">✓</span> System online</div>
-                            <div class="init-log"><span class="log-success">✓</span> 8 agents loaded</div>
-                            <div class="init-log"><span class="log-success">✓</span> Dual-model mode (Llama + Gemma)</div>
-                            <div class="init-log"><span class="log-success">✓</span> Business plan cards ready</div>
-                            <div class="init-log"><span class="log-info">ℹ</span> Enter niche → 🚀 Full Cycle → Get cards</div>
+                                <div class="init-log"><span class="log-success">✓</span> System online</div>
+                                <div class="init-log"><span class="log-success">✓</span> 10 agents loaded (+ Debater, Comparator)</div>
+                                <div class="init-log"><span class="log-success">✓</span> Dashboard ready</div>
+                                <div class="init-log"><span class="log-success">✓</span> Kanban board ready</div>
+                                <div class="init-log"><span class="log-info">ℹ</span> New: 🗣 /debate — agents discuss your idea</div>
+                                <div class="init-log"><span class="log-info">ℹ</span> New: ⚖️ Select cards → Compare</div>
+                                <div class="init-log"><span class="log-info">ℹ</span> New: 📊 DASH tab — analytics</div>
+                                <div class="init-log"><span class="log-info">ℹ</span> New: 📋 BOARD tab — kanban tracker</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="input-bar">
-                        <div class="input-prompt">
-                            <span class="prompt-agent" id="promptAgent">🧠</span>
-                            <span class="prompt-arrow">❯</span>
+                        <div class="input-bar">
+                            <div class="input-prompt">
+                                <span class="prompt-agent" id="promptAgent">🧠</span>
+                                <span class="prompt-arrow">❯</span>
+                            </div>
+                            <textarea id="userInput" placeholder="Task or /command..." rows="1" onkeydown="handleKeyDown(event)" spellcheck="false"></textarea>
+                            <button onclick="sendMessage()" id="sendBtn">▶</button>
                         </div>
-                        <textarea id="userInput" placeholder="Task or /command..." rows="1" onkeydown="handleKeyDown(event)" spellcheck="false"></textarea>
-                        <button onclick="sendMessage()" id="sendBtn">▶</button>
                     </div>
                 </div>
+
             </div>
         </main>
     </div>
