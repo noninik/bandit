@@ -40,26 +40,18 @@ function showPanel(mode) {
     var term = document.getElementById("terminalPanel");
     var div = document.getElementById("panelDivider");
     var tabs = document.querySelectorAll(".tab");
-
     tabs.forEach(function(t) { t.classList.remove("active"); });
-
     if (mode === "plans") {
-        plans.style.display = "flex";
-        plans.style.width = "100%";
-        term.style.display = "none";
-        div.style.display = "none";
+        plans.style.display = "flex"; plans.style.width = "100%";
+        term.style.display = "none"; div.style.display = "none";
         tabs[1].classList.add("active");
     } else if (mode === "terminal") {
-        plans.style.display = "none";
-        div.style.display = "none";
-        term.style.display = "flex";
-        term.style.flex = "1";
+        plans.style.display = "none"; div.style.display = "none";
+        term.style.display = "flex"; term.style.flex = "1";
         tabs[2].classList.add("active");
     } else {
-        plans.style.display = "flex";
-        plans.style.width = "40%";
-        term.style.display = "flex";
-        term.style.flex = "1";
+        plans.style.display = "flex"; plans.style.width = "40%";
+        term.style.display = "flex"; term.style.flex = "1";
         div.style.display = "block";
         tabs[0].classList.add("active");
     }
@@ -71,28 +63,22 @@ async function loadAgents() {
         var res = await fetch("/api/agents");
         agents = await res.json();
         agentsListEl.innerHTML = "";
-
         var auto = document.createElement("div");
         auto.className = "agent-item active";
         auto.dataset.id = "auto";
         auto.innerHTML = '<span class="agent-icon">🧠</span><span class="agent-name">Auto</span><span class="agent-dot"></span>';
         auto.onclick = function() { switchAgent("auto"); };
         agentsListEl.appendChild(auto);
-
         for (var id in agents) {
             var a = agents[id];
             var d = document.createElement("div");
             d.className = "agent-item";
             d.dataset.id = id;
             d.innerHTML = '<span class="agent-icon">' + a.icon + '</span><span class="agent-name">' + a.name + '</span><span class="agent-dot"></span>';
-            d.onclick = (function(agentId) {
-                return function() { switchAgent(agentId); };
-            })(id);
+            d.onclick = (function(agentId) { return function() { switchAgent(agentId); }; })(id);
             agentsListEl.appendChild(d);
         }
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
 }
 
 
@@ -122,18 +108,12 @@ async function loadCommands() {
             d.className = "command-item";
             d.innerHTML = '<span class="command-name">' + c.title + '</span><span class="command-desc">' + c.desc + '</span>';
             d.onclick = function() {
-                if (c.title === "/fullcycle") {
-                    document.getElementById("nicheInput").focus();
-                } else {
-                    inputEl.value = c.prompt;
-                    inputEl.focus();
-                }
+                if (c.title === "/fullcycle") { document.getElementById("nicheInput").focus(); }
+                else { inputEl.value = c.prompt; inputEl.focus(); }
             };
             commandsListEl.appendChild(d);
         });
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
 }
 
 
@@ -155,29 +135,28 @@ function addLog(type, text) {
 
 function parseResponse(text) {
     var stepMap = {
-        "СКАНИРОВАНИЕ": "analysis", "АНАЛИЗ": "analysis", "АУДИТОРИЯ": "analysis",
-        "REDDIT": "research", "YOUTUBE": "research", "TWITTER/X": "research",
-        "TELEGRAM/ФОРУМЫ": "research", "GOOGLE TRENDS": "research",
-        "КАРТА БОЛЕЙ": "research", "ЗОЛОТЫЕ ВОЗМОЖНОСТИ": "strategy",
-        "ИССЛЕДОВАНИЕ": "research", "КОНКУРЕНТЫ": "research", "ТРЕНДЫ": "research",
-        "БОЛИ": "research", "СТРАТЕГИЯ": "strategy", "КАНАЛЫ": "strategy",
-        "ПОЗИЦИОНИРОВАНИЕ": "strategy", "РЕШЕНИЕ": "strategy", "МОДЕЛЬ": "strategy",
-        "ПРОДУКТ": "strategy", "БИЗНЕС-МОДЕЛЬ": "strategy",
-        "ПЛАН": "plan", "MVP": "plan", "КОД": "plan", "КОНТЕНТ-ПЛАН": "plan",
-        "ДОРОЖНАЯ КАРТА": "plan", "ВОРОНКА": "plan", "ЗАПУСК": "plan",
-        "MVP 14 ДНЕЙ": "plan", "MVP — 14 ДНЕЙ": "plan", "МАРКЕТИНГ": "plan",
-        "РЕЗУЛЬТАТ": "result", "ВЫВОДЫ": "result", "ВЫВОД": "result",
-        "РЕКОМЕНДАЦИИ": "result", "МЕТРИКИ": "result", "UNIT-ЭКОНОМИКА": "result",
-        "ФИНАНСЫ": "result", "РИСКИ": "result", "СЛЕДУЮЩИЙ ШАГ": "result",
-        "РЕЗЮМЕ": "analysis", "ПРОБЛЕМА": "analysis", "РЫНОК": "research",
-        "ЦЕЛЕВОЙ РЫНОК": "research", "АРХИТЕКТУРА": "analysis",
-        "ДЕПЛОЙ": "result", "СРОКИ": "result", "КОНТАКТ": "plan",
-        "ПРЕЗЕНТАЦИЯ": "plan", "ВОЗРАЖЕНИЯ": "strategy",
-        "ЗАКРЫТИЕ": "result", "FOLLOW-UP": "result",
-        "ЛЕНДИНГ": "plan", "ДОПОЛНЕНИЕ": "result",
-        "ДОПОЛНИТЕЛЬНЫЙ АНАЛИЗ": "result"
+        "СКАНИРОВАНИЕ":"analysis","АНАЛИЗ":"analysis","АУДИТОРИЯ":"analysis",
+        "REDDIT":"research","YOUTUBE":"research","TWITTER/X":"research",
+        "TELEGRAM/ФОРУМЫ":"research","GOOGLE TRENDS":"research",
+        "КАРТА БОЛЕЙ":"research","ЗОЛОТЫЕ ВОЗМОЖНОСТИ":"strategy",
+        "ИССЛЕДОВАНИЕ":"research","КОНКУРЕНТЫ":"research","ТРЕНДЫ":"research",
+        "БОЛИ":"research","СТРАТЕГИЯ":"strategy","КАНАЛЫ":"strategy",
+        "ПОЗИЦИОНИРОВАНИЕ":"strategy","РЕШЕНИЕ":"strategy","МОДЕЛЬ":"strategy",
+        "ПРОДУКТ":"strategy","БИЗНЕС-МОДЕЛЬ":"strategy",
+        "ПЛАН":"plan","MVP":"plan","КОД":"plan","КОНТЕНТ-ПЛАН":"plan",
+        "ДОРОЖНАЯ КАРТА":"plan","ВОРОНКА":"plan","ЗАПУСК":"plan",
+        "MVP 14 ДНЕЙ":"plan","MVP — 14 ДНЕЙ":"plan","МАРКЕТИНГ":"plan",
+        "РЕЗУЛЬТАТ":"result","ВЫВОДЫ":"result","ВЫВОД":"result",
+        "РЕКОМЕНДАЦИИ":"result","МЕТРИКИ":"result","UNIT-ЭКОНОМИКА":"result",
+        "ФИНАНСЫ":"result","РИСКИ":"result","СЛЕДУЮЩИЙ ШАГ":"result",
+        "РЕЗЮМЕ":"analysis","ПРОБЛЕМА":"analysis","РЫНОК":"research",
+        "ЦЕЛЕВОЙ РЫНОК":"research","АРХИТЕКТУРА":"analysis",
+        "ДЕПЛОЙ":"result","СРОКИ":"result","КОНТАКТ":"plan",
+        "ПРЕЗЕНТАЦИЯ":"plan","ВОЗРАЖЕНИЯ":"strategy",
+        "ЗАКРЫТИЕ":"result","FOLLOW-UP":"result",
+        "ЛЕНДИНГ":"plan","ДОПОЛНЕНИЕ":"result",
+        "ДОПОЛНИТЕЛЬНЫЙ АНАЛИЗ":"result"
     };
-
     var h = text
         .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -188,22 +167,18 @@ function parseResponse(text) {
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
         .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
     h = h.replace(/\[([А-ЯA-Z\s\-\/0-9—]+)\]/g, function(m, l) {
         var t = l.trim();
         var c = stepMap[t] || "default";
         return '<div class="step-label ' + c + '">[' + t + ']</div>';
     });
-
     h = h.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-
     h = h.split('\n').map(function(l) {
         l = l.trim();
         if (!l) return '';
         if (l.startsWith('<')) return l;
         return '<p>' + l + '</p>';
     }).join('\n');
-
     return h;
 }
 
@@ -217,14 +192,12 @@ function addTerminalBlock(userText, responseHtml, agentInfo, timeStr, routeInfo,
     var b = document.createElement("div");
     b.className = "term-block";
     var a = agentInfo || { icon: "🧠", name: "Agent", color: "#58a6ff" };
-
     var html = '<div class="term-input-line"><span class="term-prompt">' + a.icon + ' ❯</span><span class="term-command">' + userText.replace(/</g, "&lt;") + '</span></div>';
     html += '<div class="term-status"><span class="agent-badge" style="background:' + a.color + '22;color:' + a.color + '">' + a.name + '</span><span>done</span></div>';
     if (routeInfo) html += '<div class="route-info">🧠 ' + routeInfo.reason + '</div>';
     if (modelsUsed) html += '<div class="models-info">🔗 ' + modelsUsed + '</div>';
     html += '<div class="term-response">' + responseHtml + '</div>';
     html += '<div class="term-time">' + (timeStr || getTime()) + '</div>';
-
     b.innerHTML = html;
     terminalEl.appendChild(b);
     terminalEl.scrollTop = terminalEl.scrollHeight;
@@ -260,10 +233,7 @@ function completeQuest(id, name) {
     quests[id] = true;
     localStorage.setItem(QUESTS_KEY, JSON.stringify(quests));
     var el = document.getElementById(id);
-    if (el) {
-        el.textContent = "☑";
-        el.parentElement.classList.add("done");
-    }
+    if (el) { el.textContent = "☑"; el.parentElement.classList.add("done"); }
     addLog("success", "🏆 " + name);
 }
 
@@ -272,10 +242,7 @@ function loadQuests() {
     for (var id in quests) {
         if (quests[id]) {
             var el = document.getElementById(id);
-            if (el) {
-                el.textContent = "☑";
-                el.parentElement.classList.add("done");
-            }
+            if (el) { el.textContent = "☑"; el.parentElement.classList.add("done"); }
         }
     }
 }
@@ -316,6 +283,50 @@ function loadHistory() {
 }
 
 
+function createIdeaCard(idea, index) {
+    var card = document.createElement("div");
+    card.className = "biz-card";
+    card.dataset.title = idea.title || "";
+    card.dataset.niche = idea.niche || "";
+
+    var stars = "";
+    var rating = idea.rating || 3;
+    for (var s = 0; s < 5; s++) {
+        stars += s < rating ? "⭐" : "☆";
+    }
+
+    card.innerHTML =
+        '<div class="card-header">' +
+            '<span class="card-niche">' + (idea.niche || "Бизнес") + '</span>' +
+            '<span class="card-time">' + stars + '</span>' +
+        '</div>' +
+        '<div class="card-title">' + (idea.title || "Идея #" + (index + 1)) + '</div>' +
+        '<div class="card-desc">' + (idea.problem || "") + '</div>' +
+        '<div class="card-metrics">' +
+            '<span class="card-metric green">' + (idea.revenue || "$?/мес") + '</span>' +
+            '<span class="card-metric blue">' + (idea.format || "SaaS") + '</span>' +
+            '<span class="card-metric yellow">' + (idea.time_to_mvp || "? нед") + '</span>' +
+            '<span class="card-metric purple">Старт: ' + (idea.startup_cost || "$?") + '</span>' +
+        '</div>' +
+        '<div class="card-desc" style="font-size:10px;margin-top:4px;">' +
+            '💡 ' + (idea.solution || "") +
+        '</div>' +
+        '<div class="card-desc" style="font-size:10px;color:var(--cyan);">' +
+            '📈 ' + (idea.trend || "") +
+        '</div>' +
+        '<div class="card-desc" style="font-size:9px;color:var(--text-muted);margin-top:4px;">' +
+            '👣 ' + (idea.first_step || "") +
+        '</div>' +
+        '<div class="card-actions">' +
+            '<button class="card-action primary" onclick="expandIdea(this)">📋 План</button>' +
+            '<button class="card-action" onclick="scanIdea(this)">📡 Скан</button>' +
+            '<button class="card-action" onclick="buildIdea(this)">🛠 MVP</button>' +
+        '</div>';
+
+    return card;
+}
+
+
 async function loadAutoIdeas() {
     addLog("info", "🤖 Generating business ideas...");
     setStatus("working", "Generating ideas...");
@@ -328,58 +339,40 @@ async function loadAutoIdeas() {
             var emptyEl = document.getElementById("plansEmpty");
             if (emptyEl) emptyEl.style.display = "none";
 
+            var existingCards = plansListEl.querySelectorAll(".biz-card");
+
+            if (existingCards.length > 0 && !data.cached) {
+                var divider = document.createElement("div");
+                divider.style.cssText = "text-align:center;padding:8px;font-size:10px;color:var(--cyan);border-top:1px solid var(--border);margin-top:4px;";
+                divider.textContent = "── 🔄 Новые идеи " + getTime() + " ──";
+                plansListEl.insertBefore(divider, plansListEl.firstChild);
+            }
+
             data.ideas.forEach(function(idea, index) {
-                var card = document.createElement("div");
-                card.className = "biz-card";
-                card.dataset.title = idea.title || "";
-                card.dataset.niche = idea.niche || "";
+                var card = createIdeaCard(idea, index);
 
-                var stars = "";
-                var rating = idea.rating || 3;
-                for (var s = 0; s < 5; s++) {
-                    stars += s < rating ? "⭐" : "☆";
+                if (existingCards.length > 0 && !data.cached) {
+                    var insertAfter = plansListEl.children[1] || null;
+                    if (insertAfter) {
+                        plansListEl.insertBefore(card, insertAfter);
+                    } else {
+                        plansListEl.appendChild(card);
+                    }
+                } else {
+                    plansListEl.appendChild(card);
                 }
-
-                card.innerHTML =
-                    '<div class="card-header">' +
-                        '<span class="card-niche">' + (idea.niche || "Бизнес") + '</span>' +
-                        '<span class="card-time">' + stars + '</span>' +
-                    '</div>' +
-                    '<div class="card-title">' + (idea.title || "Идея #" + (index + 1)) + '</div>' +
-                    '<div class="card-desc">' + (idea.problem || "") + '</div>' +
-                    '<div class="card-metrics">' +
-                        '<span class="card-metric green">' + (idea.revenue || "$?/мес") + '</span>' +
-                        '<span class="card-metric blue">' + (idea.format || "SaaS") + '</span>' +
-                        '<span class="card-metric yellow">' + (idea.time_to_mvp || "? нед") + '</span>' +
-                        '<span class="card-metric purple">Старт: ' + (idea.startup_cost || "$?") + '</span>' +
-                    '</div>' +
-                    '<div class="card-desc" style="font-size:10px;margin-top:4px;">' +
-                        '💡 ' + (idea.solution || "") +
-                    '</div>' +
-                    '<div class="card-desc" style="font-size:10px;color:var(--cyan);">' +
-                        '📈 ' + (idea.trend || "") +
-                    '</div>' +
-                    '<div class="card-desc" style="font-size:9px;color:var(--text-muted);margin-top:4px;">' +
-                        '👣 ' + (idea.first_step || "") +
-                    '</div>' +
-                    '<div class="card-actions">' +
-                        '<button class="card-action primary" onclick="expandIdea(this)">📋 План</button>' +
-                        '<button class="card-action" onclick="scanIdea(this)">📡 Скан</button>' +
-                        '<button class="card-action" onclick="buildIdea(this)">🛠 MVP</button>' +
-                    '</div>';
-
-                plansListEl.appendChild(card);
             });
 
-            stats.plans = data.ideas.length;
+            var totalCards = plansListEl.querySelectorAll(".biz-card").length;
+            stats.plans = totalCards;
             updateStats();
-            document.getElementById("plansCardCount").textContent = data.ideas.length;
-            addLog("success", "🤖 " + data.ideas.length + " ideas ready" + (data.cached ? " (cached)" : ""));
+            document.getElementById("plansCardCount").textContent = totalCards;
+            addLog("success", "🤖 " + data.ideas.length + " ideas" + (data.cached ? " (cached)" : " (new!)"));
         } else {
-            addLog("warning", "No ideas generated. Try refresh.");
+            addLog("warning", "No ideas generated");
         }
     } catch (e) {
-        addLog("error", "Auto-ideas: " + e.message);
+        addLog("error", "Ideas: " + e.message);
     }
 
     setStatus("ready");
@@ -393,7 +386,7 @@ async function expandIdea(btn) {
 
     sendBtn.disabled = true;
     setStatus("working", "Building plan...");
-    showThinking("📋 Creating plan: " + title);
+    showThinking("📋 Plan: " + title);
 
     try {
         var res = await fetch("/api/expand-idea", {
@@ -447,8 +440,14 @@ function buildIdea(btn) {
 
 
 async function refreshIdeas() {
-    plansListEl.innerHTML = '<div class="plans-empty" id="plansEmpty"><div class="empty-icon">⏳</div><p>Генерация новых идей...</p></div>';
-    document.getElementById("plansCardCount").textContent = "0";
+    var emptyEl = document.getElementById("plansEmpty");
+    if (!emptyEl) {
+        var newEmpty = document.createElement("div");
+        newEmpty.className = "plans-empty";
+        newEmpty.id = "plansEmpty";
+        newEmpty.innerHTML = '<div class="empty-icon">⏳</div><p>Генерация новых идей...</p>';
+        plansListEl.insertBefore(newEmpty, plansListEl.firstChild);
+    }
     await loadAutoIdeas();
 }
 
@@ -462,7 +461,7 @@ async function quickGenerate() {
     }
 
     sendBtn.disabled = true;
-    setStatus("working", "Ideas for: " + niche);
+    setStatus("working", "Ideas: " + niche);
     showThinking("💡 Generating for: " + niche);
 
     try {
@@ -723,18 +722,14 @@ function exportChat() {
         var resp = block.querySelector(".term-response");
         var tm = block.querySelector(".term-time");
         lines.push(
-            "[" + (tm ? tm.textContent : "") + "] [" + (badge ? badge.innerText : "") + "] > " + (cmd ? cmd.innerText : "") +
-            "\n\n" + (resp ? resp.innerText : "") + "\n\n---\n"
+            "[" + (tm ? tm.textContent : "") + "] [" + (badge ? badge.innerText : "") + "] > " +
+            (cmd ? cmd.innerText : "") + "\n\n" + (resp ? resp.innerText : "") + "\n\n---\n"
         );
     });
 
-    if (!lines.length) {
-        addLog("warning", "Empty");
-        return;
-    }
+    if (!lines.length) { addLog("warning", "Empty"); return; }
 
     completeQuest("q5", "Экспорт");
-
     var text = "=== AI Agent Army v5 ===\n" + new Date().toLocaleString() + "\n\n" + lines.join("\n");
     var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     var a = document.createElement("a");
@@ -764,3 +759,8 @@ loadHistory();
 updateStats();
 loadQuests();
 loadAutoIdeas();
+
+setInterval(function() {
+    addLog("info", "🔄 Auto-refresh ideas...");
+    loadAutoIdeas();
+}, 600000);
