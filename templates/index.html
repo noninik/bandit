@@ -3,105 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Agent System</title>
+    <title>AI Agent Army</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
     <div class="app">
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <!-- Agents -->
             <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <span class="folder-icon">▼</span> AGENTS
-                </div>
+                <div class="sidebar-title"><span class="folder-icon">▼</span> AGENTS</div>
                 <div id="agentsList"></div>
             </div>
 
-            <!-- Auto-routing toggle -->
             <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <span class="folder-icon">▼</span> MODE
-                </div>
+                <div class="sidebar-title"><span class="folder-icon">▼</span> MODE</div>
                 <div class="mode-toggle">
                     <label class="toggle-label">
                         <input type="checkbox" id="autoRoute" checked>
                         <span class="toggle-slider"></span>
                         <span class="toggle-text">🧠 Auto-routing</span>
                     </label>
-                    <p class="mode-desc">Диспетчер сам выбирает агента</p>
                 </div>
             </div>
 
-            <!-- Chains -->
             <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <span class="folder-icon">▼</span> CHAINS
+                <div class="sidebar-title"><span class="folder-icon">▼</span> 🚀 FULL CYCLE</div>
+                <div class="fullcycle-panel">
+                    <input type="text" id="nicheInput" placeholder="Введи нишу..." class="niche-input">
+                    <button class="fullcycle-btn" onclick="runFullCycle()">
+                        🚀 Запустить полный цикл
+                        <span class="fullcycle-desc">Скан соцсетей → Идеи → Бизнес-план</span>
+                    </button>
                 </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title"><span class="folder-icon">▼</span> CHAINS</div>
                 <div class="chain-buttons">
-                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Полный анализ')">
-                        🔥 Полный цикл
-                        <span class="chain-desc">Research → Strategy → Marketing</span>
+                    <button class="chain-btn" onclick="runChain(['scanner','idea_generator','business_plan'], 'Полный анализ')">
+                        🔥 Скан → Идеи → План
                     </button>
-                    <button class="chain-btn" onclick="runChain(['researcher','developer'], 'Техническое исследование')">
-                        🛠 Техническая проверка
-                        <span class="chain-desc">Research → Development</span>
+                    <button class="chain-btn" onclick="runChain(['researcher','strategist','marketer'], 'Стратегия')">
+                        📊 Анализ → Стратегия → Маркетинг
                     </button>
-                    <button class="chain-btn" onclick="runChain(['strategist','sales'], 'Продажи')">
-                        💰 Стратегия продаж
-                        <span class="chain-desc">Strategy → Sales</span>
+                    <button class="chain-btn" onclick="runChain(['strategist','developer'], 'Техническая')">
+                        🛠 Стратегия → Разработка
+                    </button>
+                    <button class="chain-btn" onclick="runChain(['marketer','sales'], 'Продажи')">
+                        💰 Маркетинг → Продажи
                     </button>
                 </div>
             </div>
 
-            <!-- Commands -->
             <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <span class="folder-icon">▼</span> COMMANDS
-                </div>
+                <div class="sidebar-title"><span class="folder-icon">▼</span> COMMANDS</div>
                 <div id="commandsList"></div>
             </div>
 
-            <!-- Session -->
             <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <span class="folder-icon">▼</span> SESSION
-                </div>
+                <div class="sidebar-title"><span class="folder-icon">▼</span> SESSION</div>
                 <div class="session-info">
                     <div class="session-row"><span>📊</span><span>messages: <span id="msgCount">0</span></span></div>
-                    <div class="session-row"><span>🤖</span><span>agents used: <span id="agentsUsed">0</span></span></div>
+                    <div class="session-row"><span>🤖</span><span>agents: <span id="agentsUsed">0</span></span></div>
+                    <div class="session-row"><span>🔗</span><span>chains: <span id="chainsRun">0</span></span></div>
                     <div class="session-row"><span>🕐</span><span>uptime: <span id="uptime">00:00</span></span></div>
-                    <div class="session-row"><span>📁</span><span>project: <span id="projectName">default</span></span></div>
                 </div>
             </div>
 
-            <!-- Quests -->
             <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <span class="folder-icon">▼</span> QUESTS
-                </div>
-                <div class="quests-list" id="questsList">
-                    <div class="quest-item">
-                        <div class="quest-check" id="q1">☐</div>
-                        <span>Исследовать первую нишу</span>
-                    </div>
-                    <div class="quest-item">
-                        <div class="quest-check" id="q2">☐</div>
-                        <span>Запустить цепочку агентов</span>
-                    </div>
-                    <div class="quest-item">
-                        <div class="quest-check" id="q3">☐</div>
-                        <span>Получить бизнес-план</span>
-                    </div>
-                    <div class="quest-item">
-                        <div class="quest-check" id="q4">☐</div>
-                        <span>Создать скрипт продаж</span>
-                    </div>
-                    <div class="quest-item">
-                        <div class="quest-check" id="q5">☐</div>
-                        <span>Экспортировать результат</span>
-                    </div>
+                <div class="sidebar-title"><span class="folder-icon">▼</span> QUESTS</div>
+                <div id="questsList">
+                    <div class="quest-item"><div class="quest-check" id="q1">☐</div><span>Просканировать соцсети</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q2">☐</div><span>Запустить полный цикл</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q3">☐</div><span>Получить бизнес-план</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q4">☐</div><span>Использовать 3+ агентов</span></div>
+                    <div class="quest-item"><div class="quest-check" id="q5">☐</div><span>Экспортировать результат</span></div>
                 </div>
             </div>
 
@@ -113,10 +89,9 @@
 
         <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
 
-        <!-- Terminal -->
         <main class="terminal-area">
             <div class="tab-bar">
-                <div class="tab active"><span class="tab-icon">⚡</span> AGENT TERMINAL</div>
+                <div class="tab active"><span class="tab-icon">⚡</span> AI AGENT ARMY</div>
                 <div class="tab-status">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="statusText">Ready</span>
@@ -126,18 +101,17 @@
             <div class="terminal" id="terminal">
                 <div class="terminal-welcome">
                     <pre class="ascii-art">
-    ╔══════════════════════════════════════════════╗
-    ║       AI  AGENT  ARMY  SYSTEM  v3.0         ║
-    ║       Digital Workforce Platform             ║
-    ╚══════════════════════════════════════════════╝</pre>
-                    <div class="init-log"><span class="log-success">✓</span> System initialized</div>
-                    <div class="init-log"><span class="log-success">✓</span> Groq API connected</div>
-                    <div class="init-log"><span class="log-success">✓</span> 5 agents loaded: Researcher, Strategist, Marketer, Developer, Sales</div>
-                    <div class="init-log"><span class="log-success">✓</span> Auto-routing enabled (AI dispatcher)</div>
-                    <div class="init-log"><span class="log-success">✓</span> Chain execution ready</div>
-                    <div class="init-log"><span class="log-info">ℹ</span> Type a task → AI picks the best agent</div>
-                    <div class="init-log"><span class="log-info">ℹ</span> Use CHAINS for multi-agent workflows</div>
-                    <div class="init-log"><span class="log-info">ℹ</span> Complete QUESTS to master the system</div>
+    ╔══════════════════════════════════════════════════╗
+    ║        AI  AGENT  ARMY  v4.0                    ║
+    ║        Social Scanner + Auto Business Plans     ║
+    ╚══════════════════════════════════════════════════╝</pre>
+                    <div class="init-log"><span class="log-success">✓</span> System online</div>
+                    <div class="init-log"><span class="log-success">✓</span> 7 agents loaded</div>
+                    <div class="init-log"><span class="log-success">✓</span> Social scanner ready (Reddit, YouTube, Twitter)</div>
+                    <div class="init-log"><span class="log-success">✓</span> Business plan generator ready</div>
+                    <div class="init-log"><span class="log-success">✓</span> Full cycle mode available</div>
+                    <div class="init-log"><span class="log-info">ℹ</span> Enter a niche on the left and click 🚀 Full Cycle</div>
+                    <div class="init-log"><span class="log-info">ℹ</span> Or type any task — AI dispatcher will route it</div>
                 </div>
             </div>
 
@@ -146,13 +120,7 @@
                     <span class="prompt-agent" id="promptAgent">🧠</span>
                     <span class="prompt-arrow">❯</span>
                 </div>
-                <textarea
-                    id="userInput"
-                    placeholder="Describe your task... AI will pick the right agent"
-                    rows="1"
-                    onkeydown="handleKeyDown(event)"
-                    spellcheck="false"
-                ></textarea>
+                <textarea id="userInput" placeholder="Describe task or enter /scan [niche]..." rows="1" onkeydown="handleKeyDown(event)" spellcheck="false"></textarea>
                 <button onclick="sendMessage()" id="sendBtn">▶</button>
             </div>
         </main>
