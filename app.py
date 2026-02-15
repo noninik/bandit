@@ -13,11 +13,11 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def smart_completion(messages, task_type="default"):
-    model_map = {
-        "thinking": "deepseek-r1-distill-llama-70b",
-        "creative": "llama-3.3-70b-versatile",
-        "fast": "llama-3.1-8b-instant",
-        "default": "deepseek-r1-distill-llama-70b"
+    return client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=4096
     }
 
     model = model_map.get(task_type, model_map["default"])
