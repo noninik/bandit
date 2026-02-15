@@ -5,41 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Бизнес-Агент</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
 </head>
 <body>
     <div class="app">
         <!-- Боковая панель -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h1>🤖 AI Агент</h1>
-                <p>Бизнес-помощник на Gemini</p>
+                <div class="logo">
+                    <span class="logo-icon">🤖</span>
+                    <div>
+                        <h1>AI Агент</h1>
+                        <p class="logo-sub">Бизнес-помощник</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-card">
+                <div class="stats-row">
+                    <span>💬 Сообщений</span>
+                    <span id="msgCount">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>📅 Сессий</span>
+                    <span id="sessionCount">1</span>
+                </div>
             </div>
 
             <div class="templates" id="templates">
-                <h3>Быстрые команды</h3>
-                <!-- Шаблоны загрузятся через JS -->
+                <h3>⚡ Быстрые команды</h3>
             </div>
 
-            <button class="btn-reset" onclick="resetChat()">
-                🔄 Новый диалог
-            </button>
+            <div class="sidebar-footer">
+                <button class="btn-export" onclick="exportChat()">
+                    📥 Сохранить чат
+                </button>
+                <button class="btn-reset" onclick="resetChat()">
+                    🔄 Новый диалог
+                </button>
+            </div>
         </aside>
+
+        <!-- Кнопка мобильного меню -->
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
 
         <!-- Основная область -->
         <main class="chat-area">
+            <!-- Уведомление о восстановлении -->
+            <div class="restored-notice" id="restoredNotice" style="display:none">
+                <span>💾 История восстановлена</span>
+                <button onclick="this.parentElement.style.display='none'">✕</button>
+            </div>
+
             <div class="messages" id="messages">
-                <div class="message assistant">
-                    <div class="message-content">
-                        <p>👋 Привет! Я твой AI-агент для бизнеса.</p>
-                        <p>Я могу:</p>
-                        <ul>
-                            <li>Анализировать рыночные ниши</li>
-                            <li>Генерировать бизнес-идеи</li>
-                            <li>Декомпозировать задачи</li>
-                            <li>Писать тексты для лендингов</li>
-                            <li>Составлять бизнес-планы</li>
-                        </ul>
-                        <p>Опиши свою задачу или выбери шаблон слева 👈</p>
+                <div class="welcome" id="welcome">
+                    <div class="welcome-icon">🤖</div>
+                    <h2>Привет! Я твой AI-агент</h2>
+                    <p>Опиши задачу или выбери шаблон слева</p>
+                    <div class="welcome-cards">
+                        <div class="welcome-card" onclick="quickPrompt('Проанализируй нишу онлайн-образования в 2025 году')">
+                            <span>🔍</span>
+                            <p>Анализ ниши</p>
+                        </div>
+                        <div class="welcome-card" onclick="quickPrompt('Предложи 5 бизнес-идей с бюджетом 50000 рублей')">
+                            <span>💡</span>
+                            <p>Идеи для старта</p>
+                        </div>
+                        <div class="welcome-card" onclick="quickPrompt('Составь бизнес-план для интернет-магазина')">
+                            <span>📊</span>
+                            <p>Бизнес-план</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -48,14 +84,18 @@
                 <div class="input-wrapper">
                     <textarea
                         id="userInput"
-                        placeholder="Опиши задачу для агента..."
+                        placeholder="Опиши задачу..."
                         rows="1"
                         onkeydown="handleKeyDown(event)"
                     ></textarea>
-                    <button onclick="sendMessage()" id="sendBtn">
-                        ➤
+                    <button onclick="sendMessage()" id="sendBtn" title="Отправить">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
                     </button>
                 </div>
+                <div class="input-hint">Enter — отправить · Shift+Enter — новая строка</div>
             </div>
         </main>
     </div>
