@@ -44,6 +44,18 @@ inputEl.addEventListener("input", function () {
     inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + "px";
 });
 
+/* ========== DELAY HELPER ========== */
+function delay(ms) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
+}
+
+/* ========== GET TIME ========== */
+function getTime() {
+    return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
 /* ========== SHOW PANEL ========== */
 function showPanel(mode) {
     var dash = document.getElementById("dashPanel");
@@ -254,9 +266,12 @@ function parseResponse(text) {
     return h;
 }
 
-/* ========== GET TIME ========== */
-function getTime() {
-    return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+/* ========== PARSE DEBATE TEXT ========== */
+function parseDebateText(text) {
+    return text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
 }
 
 /* ========== ADD TERMINAL BLOCK ========== */
@@ -300,6 +315,7 @@ function setStatus(s, t) {
 
 /* ========== THINKING ========== */
 function showThinking(label) {
+    hideThinking();
     var d = document.createElement("div");
     d.className = "thinking";
     d.id = "thinking";
@@ -310,6 +326,29 @@ function showThinking(label) {
 
 function hideThinking() {
     var el = document.getElementById("thinking");
+    if (el) el.remove();
+}
+
+/* ========== DEBATE TYPING INDICATOR ========== */
+function showDebateTyping(icon, label, color) {
+    hideDebateTyping();
+    var el = document.createElement("div");
+    el.className = "debate-typing";
+    el.id = "debateTyping";
+    el.innerHTML =
+        '<div class="debate-avatar" style="width:28px;height:28px;font-size:14px;border-color:' + (color || 'var(--border)') + ';background:' + (color ? color + '22' : 'transparent') + '">' + icon + '</div>' +
+        '<div class="debate-typing-dots">' +
+            '<span style="background:' + (color || 'var(--cyan)') + '"></span>' +
+            '<span style="background:' + (color || 'var(--cyan)') + '"></span>' +
+            '<span style="background:' + (color || 'var(--cyan)') + '"></span>' +
+        '</div>' +
+        '<span class="debate-typing-label">' + label + '</span>';
+    terminalEl.appendChild(el);
+    terminalEl.scrollTop = terminalEl.scrollHeight;
+}
+
+function hideDebateTyping() {
+    var el = document.getElementById("debateTyping");
     if (el) el.remove();
 }
 
@@ -352,7 +391,7 @@ function updateStats() {
 /* ========== SAVE / LOAD HISTORY ========== */
 function saveHistory() {
     var blocks = [];
-    document.querySelectorAll(".term-block,.fullcycle-header,.chain-separator").forEach(function (el) {
+    document.querySelectorAll(".term-block,.fullcycle-header,.chain-separator,.debate-header,.debate-container").forEach(function (el) {
         blocks.push(el.outerHTML);
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(blocks));
@@ -538,46 +577,133 @@ async function expandIdea(btn) {
     sendBtn.disabled = false;
 }
 
-/* ========== DEBATE IDEA ========== */
+/* ========== DEBATE IDEA (LIVE — нейронки спорят) ========== */
 async function debateIdea(btn) {
     var card = btn.closest(".biz-card");
     var title = card.dataset.title;
     var niche = card.dataset.niche;
+    var idea = title + " (ниша: " + niche + ")";
+    startDebate(idea);
+}
 
+/* ========== START DEBATE ========== */
+async function startDebate(idea) {
     sendBtn.disabled = true;
-    setStatus("working", "Debating...");
-    showThinking("🗣 Дебаты: " + title);
+    setStatus("working", "Debate starting...");
+    showPanel("terminal");
+
+    // Заголовок дебатов
+    var header = document.createElement("div");
+    header.className = "debate-header";
+    header.innerHTML =
+        '<h3>🗣 AI-Дебаты</h3>' +
+        '<p>' + idea + '</p>' +
+        '<div class="debate-participants">' +
+            '<span class="debate-participant"><span style="color:#f59e0b">🎯</span> Стратег</span>' +
+            '<span class="debate-participant"><span style="color:#ec4899">📢</span> Маркетолог</span>' +
+            '<span class="debate-participant"><span style="color:#3b82f6">💻</span> Разработчик</span>' +
+            '<span class="debate-participant"><span style="color:#ef4444">🤝</span> Продажник</span>' +
+        '</div>';
+    terminalEl.appendChild(header);
+
+    // Контейнер дебатов
+    var debateContainer = document.createElement("div");
+    debateContainer.className = "debate-container";
+    debateContainer.id = "debateContainer";
+    terminalEl.appendChild(debateContainer);
+
+    // Typing indicator
+    showDebateTyping("🎯", "Стратег думает...", "#f59e0b");
+    terminalEl.scrollTop = terminalEl.scrollHeight;
 
     try {
-        var res = await fetch("/api/debate", {
+        var res = await fetch("/api/debate-live", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idea: title + " (ниша: " + niche + ")" })
+            body: JSON.stringify({ idea: idea })
         });
         var data = await res.json();
-        hideThinking();
+        hideDebateTyping();
 
         if (data.error) {
             addLog("error", data.error);
-        } else {
-            addTerminalBlock("🗣 Дебаты: " + title, parseResponse(data.response), {
-                icon: data.agent_icon,
-                name: data.agent_name,
-                color: data.agent_color
-            });
-            completeQuest("q5", "Дебаты");
-            stats.messages++;
-            updateStats();
-            saveHistory();
-            showPanel("all");
+            setStatus("ready");
+            sendBtn.disabled = false;
+            return;
         }
+
+        // Рендерим результаты с анимацией
+        await renderDebateResults(debateContainer, data.results);
+
+        completeQuest("q5", "Дебаты");
+        stats.messages += data.results.length;
+        updateStats();
+        saveHistory();
+        addLog("success", "🗣 Дебаты завершены: " + idea);
+
     } catch (e) {
-        hideThinking();
+        hideDebateTyping();
         addLog("error", e.message);
     }
 
     setStatus("ready");
     sendBtn.disabled = false;
+}
+
+/* ========== RENDER DEBATE RESULTS ========== */
+async function renderDebateResults(container, results) {
+    var currentRound = 0;
+    var roleMap = {
+        "strategist": { css: "strategist", role: "Бизнес-потенциал" },
+        "marketer": { css: "marketer", role: "Продвижение" },
+        "developer": { css: "developer", role: "Техническая часть" },
+        "sales": { css: "sales", role: "Продажи" },
+        "verdict": { css: "verdict", role: "Финальный вердикт" }
+    };
+
+    for (var i = 0; i < results.length; i++) {
+        var r = results[i];
+
+        // Лейбл раунда
+        if (r.round !== currentRound) {
+            currentRound = r.round;
+            var roundLabel = document.createElement("div");
+            if (currentRound === 1) {
+                roundLabel.className = "debate-round-label";
+                roundLabel.textContent = "── РАУНД 1 — Первые мнения ──";
+            } else if (currentRound === 2) {
+                roundLabel.className = "debate-round-label round2";
+                roundLabel.textContent = "── РАУНД 2 — Дебаты и спор ──";
+            } else if (currentRound === 3) {
+                roundLabel.className = "debate-round-label verdict";
+                roundLabel.textContent = "── ФИНАЛЬНЫЙ ВЕРДИКТ ──";
+            }
+            container.appendChild(roundLabel);
+        }
+
+        // Задержка для эффекта живого спора
+        await delay(300);
+
+        var info = roleMap[r.agent_id] || { css: "strategist", role: "" };
+
+        var msg = document.createElement("div");
+        msg.className = "debate-msg " + info.css + (r.agent_id === "verdict" ? " verdict-msg" : "");
+
+        var textHtml = parseDebateText(r.response);
+
+        msg.innerHTML =
+            '<div class="debate-avatar ' + info.css + '">' + r.agent_icon + '</div>' +
+            '<div class="debate-content">' +
+                '<div class="debate-name" style="color:' + r.agent_color + '">' +
+                    r.agent_name +
+                    '<span class="debate-role">' + info.role + '</span>' +
+                '</div>' +
+                '<div class="debate-text">' + textHtml + '</div>' +
+            '</div>';
+
+        container.appendChild(msg);
+        terminalEl.scrollTop = terminalEl.scrollHeight;
+    }
 }
 
 /* ========== SCAN IDEA ========== */
@@ -687,49 +813,15 @@ async function sendMessage() {
             addLog("warning", "Укажи идею для дебатов");
             return;
         }
-
         inputEl.value = "";
         inputEl.style.height = "auto";
-        sendBtn.disabled = true;
-        setStatus("working", "Debating...");
-        showThinking("🗣 Дебаты команды...");
-
-        try {
-            var res = await fetch("/api/debate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idea: idea })
-            });
-            var data = await res.json();
-            hideThinking();
-
-            if (data.error) {
-                addLog("error", data.error);
-            } else {
-                addTerminalBlock("🗣 Дебаты: " + idea, parseResponse(data.response), {
-                    icon: data.agent_icon,
-                    name: data.agent_name,
-                    color: data.agent_color
-                });
-                completeQuest("q5", "Дебаты");
-                stats.messages++;
-                updateStats();
-                saveHistory();
-            }
-        } catch (e) {
-            hideThinking();
-            addLog("error", e.message);
-        }
-
-        setStatus("ready");
-        sendBtn.disabled = false;
-        inputEl.focus();
+        startDebate(idea);
         return;
     }
 
     // Обработка /compare
     if (text.toLowerCase().startsWith("/compare ") || text.toLowerCase().startsWith("сравни ")) {
-        addLog("info", "Выдели карточки и нажми ⚖️ Сравнить");
+        addLog("info", "Выдели карточки кликом и нажми ⚖️ Сравнить");
         inputEl.value = "";
         return;
     }
@@ -785,6 +877,7 @@ async function sendMessage() {
 
             if (data.agent === "scanner") completeQuest("q1", "Сканировать");
             if (data.agent === "business_plan") completeQuest("q3", "Бизнес-план");
+            if (data.agent === "debater") completeQuest("q5", "Дебаты");
             if (stats.agents_used.length >= 3) completeQuest("q4", "3+ агентов");
         }
     } catch (e) {
@@ -808,7 +901,6 @@ async function runFullCycle() {
 
     sendBtn.disabled = true;
     document.getElementById("nicheInput").disabled = true;
-
     showPanel("terminal");
 
     var hdr = document.createElement("div");
@@ -878,7 +970,6 @@ async function runChain(chainAgents, chainName) {
 
     inputEl.value = "";
     sendBtn.disabled = true;
-
     showPanel("terminal");
 
     addLog("info", "🔗 " + chainName);
@@ -1249,6 +1340,15 @@ function exportChat() {
         lines.push(
             "[" + (tm ? tm.textContent : "") + "] [" + (badge ? badge.innerText : "") + "] > " +
             (cmd ? cmd.innerText : "") + "\n\n" + (resp ? resp.innerText : "") + "\n\n---\n"
+        );
+    });
+
+    // Экспорт дебатов
+    document.querySelectorAll(".debate-msg").forEach(function (msg) {
+        var name = msg.querySelector(".debate-name");
+        var text = msg.querySelector(".debate-text");
+        lines.push(
+            "[DEBATE] " + (name ? name.innerText : "") + ": " + (text ? text.innerText : "") + "\n---\n"
         );
     });
 
