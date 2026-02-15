@@ -50,6 +50,7 @@ def chat():
     data = request.json
     user_message = data.get("message", "").strip()
     session_id = data.get("session_id", "default")
+    history_from_client = data.get("history", [])
 
     if not user_message:
         return jsonify({"error": "Пустое сообщение"}), 400
@@ -64,10 +65,15 @@ def chat():
     last_request_time[session_id] = now
 
     try:
-        history = get_history(session_id)
-        history.append({"role": "user", "content": user_message})
+        # Если сервер потерял историю (перезапуск) — берём из браузера
+        server_history = get_history(session_id)
+        if not server_history and history_from_client:
+            server_history.extend(history_from_client)
+            conversations[session_id] = server_history
 
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+        server_history.append({"role": "user", "content": user_message})
+
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + server_history
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -77,10 +83,10 @@ def chat():
         )
 
         reply = response.choices[0].message.content
-        history.append({"role": "assistant", "content": reply})
+        server_history.append({"role": "assistant", "content": reply})
 
-        if len(history) > 20:
-            history[:] = history[-20:]
+        if len(server_history) > 30:
+            server_history[:] = server_history[-30:]
 
         return jsonify({
             "response": reply,
@@ -109,24 +115,24 @@ def reset():
 def get_templates():
     templates = [
         {
-            "title": "Анализ ниши",
+            "title": "🔍 Анализ ниши",
             "prompt": "Проанализируй нишу: [ОПИШИ НИШУ]. Дай анализ целевой аудитории, конкурентов и возможностей."
         },
         {
-            "title": "Генерация идей",
-            "prompt": "Предложи 5 бизнес-идей для человека с бюджетом [СУММА] и навыками в [ОБЛАСТЬ]. Для каждой идеи укажи модель монетизации и первые 3 шага."
+            "title": "💡 Генерация идей",
+            "prompt": "Предложи 5 бизнес-идей для человека с бюджетом [СУММА] и навыками в [ОБЛАСТЬ]."
         },
         {
-            "title": "Декомпозиция",
-            "prompt": "Разбей задачу на конкретные шаги: [ОПИШИ ЗАДАЧУ]. Для каждого шага укажи время выполнения и необходимые ресурсы."
+            "title": "📋 Декомпозиция",
+            "prompt": "Разбей задачу на конкретные шаги: [ОПИШИ ЗАДАЧУ]."
         },
         {
-            "title": "Лендинг",
-            "prompt": "Напиши текст для лендинга продукта: [ОПИШИ ПРОДУКТ]. Включи заголовок, подзаголовок, 3 преимущества, CTA и блок FAQ."
+            "title": "📝 Лендинг",
+            "prompt": "Напиши текст для лендинга продукта: [ОПИШИ ПРОДУКТ]."
         },
         {
-            "title": "Бизнес-план",
-            "prompt": "Составь краткий бизнес-план для: [ОПИШИ ИДЕЮ]. Включи: проблема, решение, аудитория, каналы привлечения, монетизация, метрики успеха."
+            "title": "📊 Бизнес-план",
+            "prompt": "Составь краткий бизнес-план для: [ОПИШИ ИДЕЮ]."
         }
     ]
     return jsonify(templates)
